@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prototipe Portal Pengajuan Elektronik</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="site-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">ED</div>
+        <div>
+          <p class="eyebrow">Layanan Pemerintah</p>
+          <h1>Portal Pengajuan Elektronik</h1>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <a class="nav-link active" href="#dashboard">Dasbor</a>
+        <a class="nav-link" href="#upload">Ajukan Dokumen</a>
+        <a class="nav-link" href="#detail">Detail Dokumen</a>
+        <a class="nav-link" href="#admin">Dasbor Admin</a>
+        <a class="nav-link" href="#receipt">Pratinjau Tanda Terima</a>
+        <a class="nav-link" href="#components">Komponen</a>
+      </nav>
+
+      <div class="sidebar-footer card subtle-card">
+        <p class="card-label">Peran Saat Ini</p>
+        <strong>Pengguna Eksternal Perusahaan</strong>
+        <p class="muted">Pengajuan aman untuk dokumen resmi kepabeanan.</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Sistem Pengajuan Dokumen Elektronik</p>
+          <h2>Prototipe Operasional</h2>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-secondary">Pusat Bantuan</button>
+          <button class="btn btn-primary">Pengajuan Baru</button>
+        </div>
+      </header>
+
+      <section class="screen login-screen" id="login">
+        <div class="screen-heading">
+          <div>
+            <p class="eyebrow">Halaman 1</p>
+            <h3>Halaman Login</h3>
+          </div>
+        </div>
+
+        <div class="login-panel card">
+          <div class="login-logo">
+            <div class="brand-mark large">ED</div>
+            <div>
+              <h4>Akses Resmi</h4>
+              <p class="muted">Masuk untuk mengajukan dan memantau dokumen elektronik.</p>
+            </div>
+          </div>
+
+          <form class="form-grid">
+            <label class="field">
+              <span>Alamat Email</span>
+              <input type="email" value="perusahaan@example.com">
+            </label>
+            <label class="field">
+              <span>Kata Sandi</span>
+              <input type="password" value="password123">
+            </label>
+            <button type="button" class="btn btn-primary btn-block">Masuk</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="screen" id="dashboard">
+        <div class="screen-heading">
+          <div>
+            <p class="eyebrow">Halaman 2</p>
+            <h3>Dasbor Pengguna</h3>
+          </div>
+          <div class="screen-tools">
+            <div class="badge badge-neutral">3 Dokumen Aktif</div>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <article class="card metric-card">
+            <p class="card-label">Diajukan Bulan Ini</p>
+            <strong>24</strong>
+            <span class="muted">Di berbagai kategori impor dan kepabeanan</span>
+          </article>
+          <article class="card metric-card">
+            <p class="card-label">Menunggu Tinjauan</p>
+            <strong>6</strong>
+            <span class="muted">Menunggu validasi petugas</span>
+          </article>
+          <article class="card metric-card">
+            <p class="card-label">Disetujui</p>
+            <strong>15</strong>
+            <span class="muted">Siap untuk diunduh dan diarsipkan</span>
+          </article>
+        </div>
+
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h4>Dokumen yang Diajukan</h4>
+              <p class="muted">Pantau progres dan pembaruan proses terbaru.</p>
+            </div>
+            <button class="btn btn-secondary">Ekspor Daftar</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID Dokumen</th>
+                  <th>Perihal</th>
+                  <th>Tanggal</th>
+                  <th>Unit</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>DOC-2026-1045</td>
+                  <td>Revisi Manifest Impor</td>
+                  <td>03 Apr 2026</td>
+                  <td>Kepatuhan Perdagangan</td>
+                  <td><span class="badge badge-warning">Sedang Ditinjau</span></td>
+                </tr>
+                <tr>
+                  <td>DOC-2026-1037</td>
+                  <td>Perpanjangan Permohonan Izin</td>
+                  <td>01 Apr 2026</td>
+                  <td>Perizinan</td>
+                  <td><span class="badge badge-success">Disetujui</span></td>
+                </tr>
+                <tr>
+                  <td>DOC-2026-1028</td>
+                  <td>Perbaikan Data Invoice</td>
+                  <td>28 Mar 2026</td>
+                  <td>Tinjauan Audit</td>
+                  <td><span class="badge badge-danger">Ditolak</span></td>
+                </tr>
+                <tr>
+                  <td>DOC-2026-1023</td>
+                  <td>Lampiran Pendukung Kepabeanan</td>
+                  <td>27 Mar 2026</td>
+                  <td>Operasional</td>
+                  <td><span class="badge badge-info">Diproses</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pagination">
+            <span class="muted">Menampilkan 1-4 dari 24 data</span>
+            <div class="pagination-controls">
+              <button class="btn btn-secondary btn-small">Sebelumnya</button>
+              <button class="btn btn-primary btn-small">1</button>
+              <button class="btn btn-secondary btn-small">2</button>
+              <button class="btn btn-secondary btn-small">Berikutnya</button>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="screen" id="upload">
+        <div class="screen-heading">
+          <div>
+            <p class="eyebrow">Halaman 3</p>
+            <h3>Form Unggah</h3>
+          </div>
+        </div>
+
+        <article class="card form-card">
+          <div class="card-head">
+            <div>
+              <h4>Pengajuan Dokumen Baru</h4>
+              <p class="muted">Lengkapi field yang diperlukan dan lampirkan dokumen PDF.</p>
+            </div>
+          </div>
+
+          <form class="form-grid two-column">
+            <label class="field">
+              <span>Perihal</span>
+              <input type="text" value="Permohonan Persetujuan Pengeluaran Barang">
+            </label>
+            <label class="field">
+              <span>Tanggal</span>
+              <input type="date" value="2026-04-03">
+            </label>
+            <label class="field field-full">
+              <span>Deskripsi</span>
+              <textarea rows="5">Pengajuan dokumen pendukung revisi untuk permohonan clearance kepabeanan beserta alur persetujuan terkait.</textarea>
+            </label>
+            <div class="upload-box field-full">
+              <p class="card-label">Unggah PDF</p>
+              <div class="upload-inner">
+                <strong>revisi-manifest.pdf</strong>
+                <span class="muted">PDF, 1.8 MB</span>
+                <button type="button" class="btn btn-secondary">Pilih File</button>
+              </div>
+            </div>
+            <div class="form-actions field-full">
+              <button type="button" class="btn btn-secondary">Simpan Draft</button>
+              <button type="button" class="btn btn-primary">Ajukan Dokumen</button>
+            </div>
+          </form>
+        </article>
+      </section>
+
+      <section class="screen" id="detail">
+        <div class="screen-heading">
+          <div>
+            <p class="eyebrow">Halaman 4</p>
+            <h3>Detail Dokumen</h3>
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h4>Informasi Dokumen</h4>
+                <p class="muted">Rincian referensi untuk pengajuan yang sedang aktif.</p>
+              </div>
+              <span class="badge badge-warning">Sedang Ditinjau</span>
+            </div>
+
+            <dl class="detail-list">
+              <div>
+                <dt>ID Dokumen</dt>
+                <dd>DOC-2026-1045</dd>
+              </div>
+              <div>
+                <dt>Pemohon</dt>
+                <dd>PT Nusantara Cargo</dd>
+              </div>
+              <div>
+                <dt>Perihal</dt>
+                <dd>Revisi Manifest Impor</dd>
+              </div>
+              <div>
+                <dt>Diajukan</dt>
+                <dd>03 Apr 2026, 09:30 WIB</dd>
+              </div>
+              <div>
+                <dt>Unit Terkait</dt>
+                <dd>Meja Kepatuhan Perdagangan</dd>
+              </div>
+            </dl>
+
+            <button class="btn btn-primary">Unduh File Hasil</button>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h4>Timeline Status</h4>
+                <p class="muted">Progres yang transparan untuk proses internal.</p>
+              </div>
+            </div>
+
+            <ol class="timeline">
+              <li class="timeline-item complete">
+                <strong>Dokumen Diajukan</strong>
+                <span>03 Apr 2026, 09:30 WIB</span>
+              </li>
+              <li class="timeline-item complete">
+                <strong>Validasi Administratif</strong>
+                <span>03 Apr 2026, 10:00 WIB</span>
+              </li>
+              <li class="timeline-item current">
+                <strong>Tinjauan Petugas Berlangsung</strong>
+                <span>Menunggu penyelesaian</span>
+              </li>
+              <li class="timeline-item">
+                <strong>Keputusan Diterbitkan</strong>
+                <span>Menunggu hasil tinjauan</span>
+              </li>
+            </ol>
+          </article>
+        </div>
+      </section>
+
+      <section class="screen" id="admin">
+        <div class="screen-heading">
+          <div>
+            <p class="eyebrow">Halaman 5</p>
+            <h3>Dasbor Admin</h3>
+          </div>
+          <div class="filters">
+            <button class="btn btn-secondary btn-small">Semua</button>
+            <button class="btn btn-secondary btn-small">Menunggu</button>
+            <button class="btn btn-secondary btn-small">Disetujui</button>
+            <button class="btn btn-secondary btn-small">Ditolak</button>
+          </div>
+        </div>
+
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h4>Antrian Pengajuan</h4>
+              <p class="muted">Ringkasan proses internal untuk petugas bea cukai.</p>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Pemohon</th>
+                  <th>Perihal</th>
+                  <th>Status</th>
+                  <th>Diperbarui</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>DOC-2026-1045</td>
+                  <td>PT Nusantara Cargo</td>
+                  <td>Revisi Manifest Impor</td>
+                  <td><span class="badge badge-warning">Sedang Ditinjau</span></td>
+                  <td>10 menit lalu</td>
+                  <td>
+                    <div class="action-group">
+                      <button class="btn btn-success btn-small">Setujui</button>
+                      <button class="btn btn-danger btn-small">Tolak</button>
+                      <button class="btn btn-secondary btn-small">Proses</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>DOC-2026-1037</td>
+                  <td>PT Sinar Logistik</td>
+                  <td>Perpanjangan Permohonan Izin</td>
+                  <td><span class="badge badge-success">Disetujui</span></td>
+                  <td>2 jam lalu</td>
+                  <td>
+                    <div class="action-group">
+                      <button class="btn btn-success btn-small">Setujui</button>
+                      <button class="btn btn-danger btn-small">Tolak</button>
+                      <button class="btn btn-secondary btn-small">Proses</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section class="screen" id="receipt">
+        <div class="screen-heading">
+          <div>
+            <p class="eyebrow">Halaman 6</p>
+            <h3>Pratinjau Tanda Terima</h3>
+          </div>
+        </div>
+
+        <article class="receipt card">
+          <div class="receipt-head">
+            <div>
+              <p class="eyebrow">Tanda Terima Pengajuan Resmi</p>
+              <h4>Bukti Penerimaan Dokumen Elektronik</h4>
+            </div>
+            <span class="badge badge-success">Terverifikasi</span>
+          </div>
+
+          <div class="receipt-grid">
+            <div>
+              <p class="card-label">ID Dokumen</p>
+              <strong>DOC-2026-1045</strong>
+            </div>
+            <div>
+              <p class="card-label">Tanggal Pengajuan</p>
+              <strong>03 Apr 2026</strong>
+            </div>
+            <div>
+              <p class="card-label">Nama Pengguna</p>
+              <strong>PT Nusantara Cargo</strong>
+            </div>
+            <div>
+              <p class="card-label">Email</p>
+              <strong>admin@nusantaracargo.co.id</strong>
+            </div>
+          </div>
+
+          <div class="receipt-summary">
+            <p class="card-label">Informasi Pengajuan</p>
+            <p>Permohonan revisi manifest impor telah berhasil tercatat dalam sistem pengajuan kepabeanan elektronik dan sedang menunggu tinjauan akhir petugas.</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="screen" id="components">
+        <div class="screen-heading">
+          <div>
+            <p class="eyebrow">UI Kit</p>
+            <h3>Komponen Utama</h3>
+          </div>
+        </div>
+
+        <div class="component-grid">
+          <article class="card">
+            <h4>Tombol</h4>
+            <div class="stack-row">
+              <button class="btn btn-primary">Utama</button>
+              <button class="btn btn-secondary">Sekunder</button>
+              <button class="btn btn-success">Setujui</button>
+              <button class="btn btn-danger">Tolak</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <h4>Lencana Status</h4>
+            <div class="stack-row">
+              <span class="badge badge-success">Disetujui</span>
+              <span class="badge badge-warning">Sedang Ditinjau</span>
+              <span class="badge badge-danger">Ditolak</span>
+              <span class="badge badge-info">Diproses</span>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

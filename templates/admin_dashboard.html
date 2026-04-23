@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+
+{% block title %}Dasbor Admin{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <section class="rounded-[28px] bg-white p-6 shadow-panel ring-1 ring-slate-200 sm:p-8">
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="text-sm font-medium text-emerald-700">Tinjauan Admin</p>
+                <h1 class="mt-2 text-3xl font-semibold text-slate-900">Semua Dokumen yang Diajukan</h1>
+                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-500">Saring antrean berdasarkan status, buka setiap pengajuan, dan lanjutkan proses peninjauan, pemrosesan, atau penyelesaian dari satu ruang kerja responsif.</p>
+            </div>
+            <form class="grid gap-3 sm:grid-cols-[minmax(220px,1fr)_auto]" method="get" action="/admin/dashboard">
+                <select id="status_filter" name="status_filter" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                    <option value="">Semua Status</option>
+                    {% for status_option in valid_statuses %}
+                    <option value="{{ status_option }}" {% if selected_status == status_option %}selected{% endif %}>{{ status_option }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700">
+                    Terapkan Filter
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <section class="rounded-[28px] bg-white shadow-panel ring-1 ring-slate-200">
+        {% if submissions %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr class="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                        <th class="px-6 py-4">Pengguna</th>
+                        <th class="px-6 py-4">Perihal</th>
+                        <th class="px-6 py-4">Tanggal</th>
+                        <th class="px-6 py-4">Status</th>
+                        <th class="px-6 py-4">Detail</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    {% for submission in submissions %}
+                    <tr class="transition hover:bg-slate-50">
+                        <td class="px-6 py-4">
+                            <div class="font-semibold text-slate-900">{{ submission.user.username }}</div>
+                            <div class="mt-1 text-xs text-slate-500">{{ submission.document_id }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-slate-700">{{ submission.subject }}</div>
+                            <div class="mt-1 text-xs font-medium text-emerald-700">{{ submission.bagian }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-slate-600">{{ submission.document_date.strftime("%Y-%m-%d") }}</td>
+                        <td class="px-6 py-4">{{ ui.status_badge(submission.status) }}</td>
+                        <td class="px-6 py-4">
+                            <a href="/admin/documents/{{ submission.document_id }}" class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                                Lihat Detail
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="px-6 py-14 text-center">
+            <h3 class="text-lg font-semibold text-slate-900">Tidak ada dokumen yang cocok</h3>
+            <p class="mt-2 text-sm text-slate-500">Coba hapus filter atau tunggu pengajuan baru masuk ke antrean peninjauan.</p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

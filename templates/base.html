@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: "#0f172a",
+                        mist: "#f8fafc",
+                        brand: {
+                            50: "#f0f9ff",
+                            100: "#e0f2fe",
+                            500: "#0ea5e9",
+                            600: "#0284c7",
+                            700: "#0369a1"
+                        }
+                    },
+                    boxShadow: {
+                        panel: "0 20px 45px rgba(15, 23, 42, 0.08)"
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-900">
+    <div class="min-h-screen lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
+        <aside class="border-b border-slate-200 bg-slate-950 text-slate-100 lg:min-h-screen lg:border-b-0 lg:border-r lg:border-slate-800">
+            <div class="flex items-center justify-between px-6 py-5 lg:block">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.35em] text-sky-300">SubmitDoc</p>
+                    <h1 class="mt-2 text-xl font-semibold">Sistem Dokumen</h1>
+                </div>
+                {% if current_user %}
+                <span class="rounded-full border border-slate-700 px-3 py-1 text-xs font-medium text-slate-300">{{ current_user.role|upper }}</span>
+                {% endif %}
+            </div>
+
+            <div class="px-6 pb-6">
+                {% if current_user %}
+                <div class="rounded-2xl bg-slate-900/70 p-4 ring-1 ring-slate-800">
+                    <p class="text-sm text-slate-400">Masuk sebagai</p>
+                    <p class="mt-1 text-base font-semibold">{{ current_user.username }}</p>
+                </div>
+
+                <nav class="mt-6 space-y-2">
+                    {% if current_user.role == 'service_user' %}
+                    <a href="/" class="flex items-center rounded-2xl px-4 py-3 text-sm font-medium transition {% if request.url.path == '/' %}bg-sky-500 text-white shadow-lg shadow-sky-900/30{% else %}text-slate-300 hover:bg-slate-900 hover:text-white{% endif %}">
+                        Pengajuan Dokumen
+                    </a>
+                    <a href="/dashboard" class="flex items-center rounded-2xl px-4 py-3 text-sm font-medium transition {% if request.url.path == '/dashboard' or request.url.path.startswith('/documents/') %}bg-slate-800 text-white{% else %}text-slate-300 hover:bg-slate-900 hover:text-white{% endif %}">
+                        Dashboard Pengguna Jasa
+                    </a>
+                    {% endif %}
+                    {% if current_user.role in ['monitoring', 'admin', 'super_admin'] %}
+                    <a href="/admin/dashboard" class="flex items-center rounded-2xl px-4 py-3 text-sm font-medium transition {% if request.url.path.startswith('/admin') and not request.url.path.startswith('/admin/users') %}bg-emerald-500 text-white shadow-lg shadow-emerald-900/30{% else %}text-slate-300 hover:bg-slate-900 hover:text-white{% endif %}">
+                        Dashboard Monitoring
+                    </a>
+                    {% endif %}
+                    {% if current_user.role in ['admin', 'super_admin'] %}
+                    <a href="/admin/users" class="flex items-center rounded-2xl px-4 py-3 text-sm font-medium transition {% if request.url.path.startswith('/admin/users') %}bg-slate-800 text-white{% else %}text-slate-300 hover:bg-slate-900 hover:text-white{% endif %}">
+                        Kelola Pendaftar
+                    </a>
+                    {% endif %}
+                </nav>
+
+                <div class="mt-6">
+                    <a href="/logout" class="inline-flex w-full items-center justify-center rounded-2xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-900">
+                        Keluar
+                    </a>
+                </div>
+                {% else %}
+                <div class="rounded-2xl bg-slate-900/70 p-5 ring-1 ring-slate-800">
+                    <p class="text-sm leading-6 text-slate-300">Portal ini memisahkan akses Pengguna Jasa dan Petugas Monitoring agar proses registrasi, verifikasi, dan pengawasan dokumen lebih tertata.</p>
+                    <div class="mt-4 grid gap-3">
+                        <a href="/register/pengguna-jasa" class="inline-flex items-center justify-center rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-400">Registrasi Pengguna Jasa</a>
+                        <a href="/login/pengguna-jasa" class="inline-flex items-center justify-center rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:bg-slate-900">Login Pengguna Jasa</a>
+                        <a href="/register/petugas" class="inline-flex items-center justify-center rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:bg-slate-900">Registrasi Petugas</a>
+                        <a href="/login/petugas" class="inline-flex items-center justify-center rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:bg-slate-900">Login Petugas</a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </aside>
+
+        <main class="min-w-0">
+            <div class="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-10">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+</body>
+</html>

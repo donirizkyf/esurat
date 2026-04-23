@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+
+{% block title %}Kelola Pendaftar{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <section class="rounded-[28px] bg-white p-6 shadow-panel ring-1 ring-slate-200 sm:p-8">
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="text-sm font-medium text-emerald-700">Manajemen Akun</p>
+                <h1 class="mt-2 text-3xl font-semibold text-slate-900">Daftar Pendaftar Pengguna Jasa</h1>
+                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-500">Pantau semua akun yang baru mendaftar, fokuskan antrean pada akun berstatus pending, lalu approve atau nonaktifkan langsung dari panel admin.</p>
+            </div>
+            <div class="rounded-3xl bg-amber-50 px-5 py-4 ring-1 ring-amber-100">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Butuh Verifikasi</p>
+                <p class="mt-2 text-3xl font-semibold text-amber-900">{{ pending_count }}</p>
+                <p class="mt-1 text-sm text-amber-800">akun `PENDING` menunggu tindakan petugas</p>
+            </div>
+        </div>
+
+        <form class="mt-6 grid gap-3 sm:grid-cols-[minmax(220px,1fr)_auto]" method="get" action="/admin/users">
+            <select id="status_filter" name="status_filter" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                <option value="">Semua Status Akun</option>
+                {% for status_option in valid_account_statuses %}
+                <option value="{{ status_option }}" {% if selected_status == status_option %}selected{% endif %}>{{ status_option }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700">
+                Terapkan Filter
+            </button>
+        </form>
+
+        {% if message %}
+        <div class="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+            {{ message }}
+        </div>
+        {% endif %}
+    </section>
+
+    <section class="rounded-[28px] bg-white shadow-panel ring-1 ring-slate-200">
+        {% if users %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr class="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                        <th class="px-6 py-4">Perusahaan</th>
+                        <th class="px-6 py-4">PIC</th>
+                        <th class="px-6 py-4">Identitas</th>
+                        <th class="px-6 py-4">Status</th>
+                        <th class="px-6 py-4">Terdaftar</th>
+                        <th class="px-6 py-4">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    {% for user in users %}
+                    <tr class="align-top transition hover:bg-slate-50">
+                        <td class="px-6 py-4">
+                            <div class="font-semibold text-slate-900">{{ user.company_name or '-' }}</div>
+                            <div class="mt-1 text-xs text-slate-500">{{ user.email }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-slate-700">
+                            <div class="font-medium text-slate-900">{{ user.pic_name or '-' }}</div>
+                            <div class="mt-1 text-xs text-slate-500">{{ user.username or '-' }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-slate-600">
+                            <div>{{ user.business_id or '-' }}</div>
+                        </td>
+                        <td class="px-6 py-4">{{ ui.account_status_badge(user.account_status) }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-600">{{ user.created_at.strftime("%Y-%m-%d %H:%M") if user.created_at else '-' }}</td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col gap-2 sm:flex-row">
+                                {% if can_approve_user and user.account_status != 'ACTIVE' %}
+                                <form method="post" action="/admin/users/{{ user.id }}/approve">
+                                    <button type="submit" class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">
+                                        Approve
+                                    </button>
+                                </form>
+                                {% endif %}
+                                {% if can_deactivate_user and user.account_status != 'DEACTIVATED' %}
+                                <form method="post" action="/admin/users/{{ user.id }}/deactivate">
+                                    <button type="submit" class="inline-flex w-full items-center justify-center rounded-xl border border-rose-300 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
+                                        {% if user.account_status == 'PENDING' %}Reject{% else %}Deactivate{% endif %}
+                                    </button>
+                                </form>
+                                {% endif %}
+                                {% if not can_approve_user and not can_deactivate_user %}
+                                <span class="inline-flex items-center rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-500">
+                                    Lihat Saja
+                                </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="px-6 py-14 text-center">
+            <h3 class="text-lg font-semibold text-slate-900">Tidak ada pendaftar yang cocok</h3>
+            <p class="mt-2 text-sm text-slate-500">Coba ubah filter status atau tunggu pendaftaran baru masuk.</p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}{{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <section class="overflow-hidden rounded-[28px] bg-gradient-to-br from-sky-600 via-cyan-600 to-slate-900 p-8 text-white shadow-panel">
+        <div class="max-w-3xl">
+            <p class="text-sm font-semibold uppercase tracking-[0.35em] text-sky-100/80">Portal Pengajuan</p>
+            <h2 class="mt-4 text-3xl font-semibold sm:text-4xl">Unggah dan kelola pengajuan dokumen resmi dari satu ruang kerja yang rapi.</h2>
+            <p class="mt-4 max-w-2xl text-sm leading-7 text-sky-50/85 sm:text-base">Kirim file PDF, buat tanda terima instan, pantau progres verifikasi, dan unduh hasil proses saat sudah tersedia.</p>
+        </div>
+    </section>
+
+    {% if current_user %}
+    <section class="rounded-[28px] bg-white p-6 shadow-panel ring-1 ring-slate-200 sm:p-8">
+        <div class="flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <p class="text-sm font-medium text-sky-700">Pengajuan Baru</p>
+                <h1 class="mt-2 text-2xl font-semibold text-slate-900">Unggah dokumen</h1>
+                <p class="mt-2 text-sm leading-6 text-slate-500">Isi perihal, tanggal dokumen, dan unggah file PDF hingga 5 MB.</p>
+            </div>
+            <div class="grid gap-2 text-sm text-slate-500">
+                <span class="rounded-2xl bg-slate-100 px-4 py-3">Format yang diterima: PDF</span>
+                <span class="rounded-2xl bg-slate-100 px-4 py-3">Tanda terima dibuat otomatis</span>
+            </div>
+        </div>
+
+        {% if error %}
+        <div class="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form class="mt-6 grid gap-5 lg:grid-cols-2" method="post" action="/documents/upload" enctype="multipart/form-data">
+            <div class="space-y-2">
+                <label for="bagian" class="text-sm font-semibold text-slate-700">Bagian</label>
+                <select id="bagian" name="bagian" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100">
+                    {% for bagian_option in bagian_options %}
+                    <option value="{{ bagian_option }}" {% if form_data.bagian == bagian_option %}selected{% endif %}>{{ bagian_option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="space-y-2">
+                <label for="subject" class="text-sm font-semibold text-slate-700">Perihal</label>
+                <input id="subject" name="subject" type="text" value="{{ form_data.subject }}" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100">
+            </div>
+
+            <div class="space-y-2">
+                <label for="document_date" class="text-sm font-semibold text-slate-700">Tanggal</label>
+                <input id="document_date" name="document_date" type="date" value="{{ form_data.document_date }}" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100">
+            </div>
+
+            <div class="space-y-2 lg:col-span-2">
+                <label for="description" class="text-sm font-semibold text-slate-700">Deskripsi</label>
+                <textarea id="description" name="description" rows="5" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100">{{ form_data.description }}</textarea>
+            </div>
+
+            <div class="space-y-2 lg:col-span-2">
+                <label for="file" class="text-sm font-semibold text-slate-700">File PDF</label>
+                <input id="file" name="file" type="file" accept="application/pdf,.pdf" required class="block w-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-sky-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-sky-700">
+            </div>
+
+            <div class="lg:col-span-2">
+                <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-700 focus:outline-none focus:ring-4 focus:ring-sky-200">
+                    Ajukan Dokumen
+                </button>
+            </div>
+        </form>
+    </section>
+    {% else %}
+    <section class="rounded-[28px] bg-white p-8 shadow-panel ring-1 ring-slate-200">
+        <h1 class="text-2xl font-semibold text-slate-900">Pilih jenis akses Anda</h1>
+        <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-500">Jalur perusahaan dan petugas dipisahkan dari halaman awal. Registrasi dan login pengguna jasa diberi prioritas visual lebih besar, sementara akses petugas tetap tersedia sebagai kartu ringkas.</p>
+        <div class="mt-8 grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1.35fr)_minmax(0,0.95fr)_minmax(0,0.95fr)]">
+            <a href="/register/pengguna-jasa" class="rounded-[24px] border border-emerald-200 bg-emerald-50 p-6 text-left transition hover:-translate-y-0.5 hover:shadow-lg sm:p-7">
+                <p class="text-sm font-semibold text-emerald-700">Registrasi</p>
+                <h2 class="mt-2 text-lg font-semibold text-slate-900 sm:text-xl">Registrasi Pengguna Jasa</h2>
+                <p class="mt-2 text-sm leading-6 text-slate-600">Isi data perusahaan, PIC, dan password untuk membuat akun baru yang akan dipakai mengajukan dokumen.</p>
+            </a>
+            <a href="/login/pengguna-jasa" class="rounded-[24px] border border-sky-200 bg-sky-50 p-6 text-left transition hover:-translate-y-0.5 hover:shadow-lg sm:p-7">
+                <p class="text-sm font-semibold text-sky-700">Masuk</p>
+                <h2 class="mt-2 text-lg font-semibold text-slate-900 sm:text-xl">Login Pengguna Jasa</h2>
+                <p class="mt-2 text-sm leading-6 text-slate-600">Masuk memakai email perusahaan yang sudah terdaftar dan aktif.</p>
+            </a>
+            <a href="/register/petugas" class="rounded-[22px] border border-amber-200 bg-amber-50 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lg sm:p-5">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Internal</p>
+                <h2 class="mt-2 text-base font-semibold text-slate-900">Registrasi Petugas</h2>
+                <p class="mt-2 text-sm leading-6 text-slate-600">Daftarkan akun monitoring, admin, atau super admin dengan kode registrasi internal.</p>
+            </a>
+            <a href="/login/petugas" class="rounded-[22px] border border-violet-200 bg-violet-50 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lg sm:p-5">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-violet-700">Internal</p>
+                <h2 class="mt-2 text-base font-semibold text-slate-900">Login Petugas</h2>
+                <p class="mt-2 text-sm leading-6 text-slate-600">Masuk memakai username atau email petugas yang sudah aktif.</p>
+            </a>
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

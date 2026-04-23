@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-950 via-emerald-950 to-cyan-900 text-slate-900">
+    <main class="mx-auto flex min-h-screen max-w-6xl items-center px-4 py-6 sm:px-6 sm:py-10 lg:grid lg:grid-cols-2 lg:gap-10">
+        <section class="hidden rounded-[32px] bg-white/10 p-10 text-white shadow-2xl ring-1 ring-white/15 backdrop-blur lg:block">
+            {% if register_type == "internal" %}
+            <p class="text-sm font-semibold uppercase tracking-[0.35em] text-amber-200">Registrasi Petugas</p>
+            <h1 class="mt-5 text-4xl font-semibold leading-tight">Daftarkan akun petugas untuk area monitoring dan administrasi.</h1>
+            <p class="mt-5 max-w-xl text-sm leading-7 text-emerald-50/80">Pilih role internal, isi username, lalu masukkan kode registrasi internal yang valid.</p>
+            {% else %}
+            <p class="text-sm font-semibold uppercase tracking-[0.35em] text-emerald-200">Registrasi Pengguna Jasa</p>
+            <h1 class="mt-5 text-4xl font-semibold leading-tight">Buat akun perusahaan untuk mengajukan dokumen dan memantau progresnya.</h1>
+            <p class="mt-5 max-w-xl text-sm leading-7 text-emerald-50/80">Isi identitas perusahaan, PIC, dan kata sandi. Akun dapat aktif otomatis atau menunggu verifikasi.</p>
+            {% endif %}
+        </section>
+
+        <section class="w-full rounded-[28px] bg-white p-6 shadow-2xl ring-1 ring-slate-200 sm:p-8 lg:rounded-[32px] lg:p-10">
+            <p class="text-sm font-semibold uppercase tracking-[0.3em] {% if register_type == 'internal' %}text-amber-700{% else %}text-emerald-700{% endif %}">Autentikasi</p>
+            <h1 class="mt-3 text-2xl font-semibold text-slate-900 sm:text-3xl">
+                {% if register_type == "internal" %}Registrasi Petugas{% else %}Registrasi Pengguna Jasa{% endif %}
+            </h1>
+            <p class="mt-2 text-sm leading-6 text-slate-500">
+                {% if register_type == "internal" %}
+                Isi data petugas dan pilih role internal. Hanya pendaftar yang memiliki kode registrasi internal yang akan diterima.
+                {% else %}
+                Lengkapi data perusahaan untuk membuat akun Pengguna Jasa yang dipakai mengajukan dokumen.
+                {% endif %}
+            </p>
+            {% if error %}
+            <div class="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{{ error }}</div>
+            {% endif %}
+            {% if success %}
+            <div class="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">{{ success }}</div>
+            {% endif %}
+            <form class="mt-6 space-y-5" method="post" action="/register">
+                {% if register_type == "internal" %}
+                <div class="space-y-2">
+                    <label for="role" class="text-sm font-semibold text-slate-700">Jenis Akun</label>
+                    <select id="role" name="role" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                        <option value="monitoring" {% if form_data and form_data.role == 'monitoring' %}selected{% endif %}>Petugas Monitoring</option>
+                        <option value="admin" {% if form_data and form_data.role == 'admin' %}selected{% endif %}>Admin</option>
+                        <option value="super_admin" {% if form_data and form_data.role == 'super_admin' %}selected{% endif %}>Super Admin</option>
+                    </select>
+                </div>
+                {% else %}
+                <input type="hidden" name="role" value="service_user">
+                {% endif %}
+
+                {% if register_type == "internal" %}
+                <div class="space-y-2">
+                    <label for="username" class="text-sm font-semibold text-slate-700">Username</label>
+                    <input id="username" name="username" type="text" value="{{ form_data.username if form_data else '' }}" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                    <p class="text-xs text-slate-500">Wajib untuk akun petugas.</p>
+                </div>
+                {% endif %}
+
+                {% if register_type != "internal" %}
+                <div class="space-y-2">
+                    <label for="company_name" class="text-sm font-semibold text-slate-700">Nama Perusahaan</label>
+                    <input id="company_name" name="company_name" type="text" value="{{ form_data.company_name if form_data else '' }}" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                    <p class="text-xs text-slate-500">Wajib untuk akun perusahaan.</p>
+                </div>
+                {% else %}
+                <input type="hidden" name="company_name" value="{{ form_data.company_name if form_data else '' }}">
+                {% endif %}
+
+                <div class="space-y-2">
+                    <label for="email" class="text-sm font-semibold text-slate-700">Email</label>
+                    <input id="email" name="email" type="email" value="{{ form_data.email if form_data else '' }}" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                </div>
+                {% if register_type != "internal" %}
+                <div class="space-y-2">
+                    <label for="business_id" class="text-sm font-semibold text-slate-700">Nomor Izin / NIB / NPWP</label>
+                    <input id="business_id" name="business_id" type="text" value="{{ form_data.business_id if form_data else '' }}" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                    <p class="text-xs text-slate-500">Wajib untuk akun perusahaan.</p>
+                </div>
+                {% else %}
+                <input type="hidden" name="business_id" value="{{ form_data.business_id if form_data else '' }}">
+                {% endif %}
+                <div class="space-y-2">
+                    <label for="pic_name" class="text-sm font-semibold text-slate-700">Nama PIC</label>
+                    <input id="pic_name" name="pic_name" type="text" value="{{ form_data.pic_name if form_data else '' }}" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                </div>
+                <div class="space-y-2">
+                    <label for="password" class="text-sm font-semibold text-slate-700">Kata Sandi</label>
+                    <input id="password" name="password" type="password" minlength="8" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                </div>
+                {% if register_type == "internal" %}
+                <div class="space-y-2">
+                    <label for="registration_code" class="text-sm font-semibold text-slate-700">Kode Registrasi Internal</label>
+                    <input id="registration_code" name="registration_code" type="password" value="{{ form_data.registration_code if form_data else '' }}" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                    <p class="text-xs text-slate-500">Wajib untuk role `monitoring`, `admin`, dan `super_admin`. Gunakan `PETUGAS_REGISTRATION_CODE` atau `SUPER_ADMIN_REGISTRATION_CODE` dari environment.</p>
+                </div>
+                {% else %}
+                <input type="hidden" name="registration_code" value="">
+                {% endif %}
+                <button type="submit" class="inline-flex w-full items-center justify-center rounded-2xl {% if register_type == 'internal' %}bg-amber-600 hover:bg-amber-700{% else %}bg-emerald-600 hover:bg-emerald-700{% endif %} px-5 py-3 text-sm font-semibold text-white transition">
+                    {% if register_type == "internal" %}Buat Akun Petugas{% else %}Buat Akun Pengguna Jasa{% endif %}
+                </button>
+            </form>
+            <div class="mt-6 grid gap-2 text-sm text-slate-500">
+                {% if register_type == "internal" %}
+                <p>Sudah punya akun petugas? <a href="/login/petugas" class="font-semibold text-amber-700 hover:text-amber-800">Login Petugas</a>.</p>
+                <p>Ingin membuat akun perusahaan? <a href="/register/pengguna-jasa" class="font-semibold text-emerald-700 hover:text-emerald-800">Registrasi Pengguna Jasa</a>.</p>
+                {% else %}
+                <p>Sudah punya akun perusahaan? <a href="/login/pengguna-jasa" class="font-semibold text-emerald-700 hover:text-emerald-800">Login Pengguna Jasa</a>.</p>
+                <p>Butuh akun petugas? <a href="/register/petugas" class="font-semibold text-amber-700 hover:text-amber-800">Registrasi Petugas</a>.</p>
+                {% endif %}
+            </div>
+        </section>
+    </main>
+</body>
+</html>

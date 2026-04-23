@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+
+{% block title %}Detail Dokumen{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <section class="rounded-[28px] bg-white p-6 shadow-panel ring-1 ring-slate-200 sm:p-8">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+                <p class="text-sm font-medium text-sky-700">Detail Dokumen</p>
+                <h1 class="mt-2 text-3xl font-semibold text-slate-900">{{ submission.subject }}</h1>
+                <p class="mt-2 text-sm text-slate-500">ID Dokumen: <span class="font-semibold text-slate-700">{{ submission.document_id }}</span></p>
+            </div>
+            <a href="/dashboard" class="inline-flex items-center justify-center rounded-2xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Kembali ke Dasbor</a>
+        </div>
+    </section>
+
+    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div class="rounded-[24px] bg-white p-5 shadow-panel ring-1 ring-slate-200">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Bagian</p>
+            <p class="mt-3 text-base font-semibold text-slate-900">{{ submission.bagian }}</p>
+        </div>
+        <div class="rounded-[24px] bg-white p-5 shadow-panel ring-1 ring-slate-200">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Tanggal</p>
+            <p class="mt-3 text-base font-semibold text-slate-900">{{ submission.document_date.strftime("%Y-%m-%d") }}</p>
+        </div>
+        <div class="rounded-[24px] bg-white p-5 shadow-panel ring-1 ring-slate-200">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Status</p>
+            <div class="mt-3">{{ ui.status_badge(submission.status) }}</div>
+        </div>
+        <div class="rounded-[24px] bg-white p-5 shadow-panel ring-1 ring-slate-200">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">File Asli</p>
+            <p class="mt-3 break-all text-sm font-medium text-slate-700">{{ submission.original_filename }}</p>
+        </div>
+        <div class="rounded-[24px] bg-white p-5 shadow-panel ring-1 ring-slate-200">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">File Tersimpan</p>
+            <p class="mt-3 break-all text-sm font-medium text-slate-700">{{ submission.stored_filename }}</p>
+        </div>
+        <div class="rounded-[24px] bg-white p-5 shadow-panel ring-1 ring-slate-200">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Tanda Terima Pengajuan</p>
+            <div class="mt-3">
+                {% if submission.receipt_stored_filename %}
+                <a href="/documents/{{ submission.document_id }}/receipt" class="inline-flex items-center justify-center rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700">Unduh Tanda Terima</a>
+                {% else %}
+                <p class="text-sm text-slate-500">Tanda terima belum tersedia.</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="rounded-[24px] bg-white p-5 shadow-panel ring-1 ring-slate-200">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">File Hasil</p>
+            <div class="mt-3">
+                {% if submission.result_stored_filename %}
+                <a href="/documents/{{ submission.document_id }}/result" class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700">Unduh Hasil</a>
+                {% else %}
+                <p class="text-sm text-slate-500">Hasil belum tersedia.</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <section class="rounded-[28px] bg-white p-6 shadow-panel ring-1 ring-slate-200 sm:p-8">
+        <h2 class="text-lg font-semibold text-slate-900">Deskripsi</h2>
+        <p class="mt-4 whitespace-pre-line text-sm leading-7 text-slate-600">{{ submission.description }}</p>
+    </section>
+
+    {% if submission.admin_notes %}
+    <section class="rounded-[28px] border border-amber-200 bg-amber-50 p-6 shadow-panel">
+        <h2 class="text-lg font-semibold text-amber-900">Catatan Admin</h2>
+        <p class="mt-3 whitespace-pre-line text-sm leading-7 text-amber-800">{{ submission.admin_notes }}</p>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

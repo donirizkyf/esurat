@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+
+{% block title %}Dasbor Pengguna{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <section class="rounded-[28px] bg-white p-6 shadow-panel ring-1 ring-slate-200 sm:p-8">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <p class="text-sm font-medium text-sky-700">Dasbor</p>
+                <h1 class="mt-2 text-3xl font-semibold text-slate-900">Dokumen Saya</h1>
+                <p class="mt-2 text-sm leading-6 text-slate-500">Ringkasan rapi untuk setiap pengajuan, status saat ini, dan aksi berikutnya yang tersedia.</p>
+            </div>
+            <a href="/" class="inline-flex items-center justify-center rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-700">Unggah Baru</a>
+        </div>
+    </section>
+
+    <section class="rounded-[28px] bg-white shadow-panel ring-1 ring-slate-200">
+        <div class="border-b border-slate-200 px-6 py-5">
+            <h2 class="text-lg font-semibold text-slate-900">Dokumen yang Diajukan</h2>
+            <p class="mt-1 text-sm text-slate-500">Tampilan tabel responsif dengan akses cepat ke halaman detail setiap dokumen.</p>
+        </div>
+
+        {% if submissions %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr class="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                        <th class="px-6 py-4">Perihal</th>
+                        <th class="px-6 py-4">Tanggal</th>
+                        <th class="px-6 py-4">Status</th>
+                        <th class="px-6 py-4">Detail</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    {% for submission in submissions %}
+                    <tr class="transition hover:bg-slate-50">
+                        <td class="px-6 py-4">
+                            <div class="font-semibold text-slate-900">{{ submission.subject }}</div>
+                            <div class="mt-1 text-xs font-medium text-sky-700">{{ submission.bagian }}</div>
+                            <div class="mt-1 text-xs text-slate-500">{{ submission.document_id }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-slate-600">{{ submission.document_date.strftime("%Y-%m-%d") }}</td>
+                        <td class="px-6 py-4">{{ ui.status_badge(submission.status) }}</td>
+                        <td class="px-6 py-4">
+                            <a href="/documents/{{ submission.document_id }}" class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                                Lihat Detail
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="px-6 py-14 text-center">
+            <h3 class="text-lg font-semibold text-slate-900">Belum ada dokumen</h3>
+            <p class="mt-2 text-sm text-slate-500">Buat pengajuan pertama Anda untuk mulai melacak status, tanda terima, dan hasil proses.</p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
