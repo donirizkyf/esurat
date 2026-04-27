@@ -25,6 +25,7 @@ SELF_REGISTRATION_ROLES = {
 }
 INTERNAL_REGISTRATION_ROLES = MONITORING_ROLES
 INTERNAL_SIGNUP_ROLES = {"admin", "super_admin"}
+DEFAULT_INTERNAL_STAFF_ROLE = "Monitoring"
 INTERNAL_SECTION_OPTIONS = (
     "Perijinan Cukai",
     "Perijinan Pabean",
@@ -338,6 +339,7 @@ def register_user(
         email=email,
         business_id=business_id if role == SERVICE_USER_ROLE else None,
         pic_name=pic_name,
+        staff_role=DEFAULT_INTERNAL_STAFF_ROLE if role == "admin" else None,
         section_name=section_name if role in INTERNAL_REGISTRATION_ROLES else None,
         password_hash=hash_password(password),
         role=role,

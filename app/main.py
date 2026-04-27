@@ -15,6 +15,7 @@ from app.auth import (
     ACCOUNT_ACTIVE,
     ACCOUNT_DEACTIVATED,
     ACCOUNT_PENDING,
+    DEFAULT_INTERNAL_STAFF_ROLE,
     INTERNAL_SECTION_OPTIONS,
     MONITORING_ROLES,
     SERVICE_USER_ROLE,
@@ -727,6 +728,8 @@ def update_managed_user(
             )
         if account_type == "super_admin":
             staff_role = SUPER_ADMIN_STAFF_ROLE_LABEL
+        elif not staff_role:
+            staff_role = DEFAULT_INTERNAL_STAFF_ROLE
         elif staff_role not in INTERNAL_STAFF_ROLE_OPTIONS:
             return RedirectResponse(
                 url=f"/admin/users/{user_id}?error=Admin+wajib+memiliki+satu+role+kerja+yang+valid",

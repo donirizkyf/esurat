@@ -158,7 +158,7 @@
                             <option value="{{ super_admin_staff_role_label }}" selected>{{ super_admin_staff_role_label }}</option>
                             {% else %}
                             {% for role_option in internal_staff_role_options %}
-                            <option value="{{ role_option }}" {% if managed_user.staff_role == role_option %}selected{% endif %}>{{ role_option }}</option>
+                            <option value="{{ role_option }}" {% if managed_user.staff_role == role_option or (not managed_user.staff_role and role_option == 'Monitoring') %}selected{% endif %}>{{ role_option }}</option>
                             {% endfor %}
                             {% endif %}
                         </select>
