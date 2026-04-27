@@ -15,6 +15,8 @@ from app.auth import (
     ACCOUNT_ACTIVE,
     ACCOUNT_DEACTIVATED,
     ACCOUNT_PENDING,
+    MONITORING_ROLES,
+    SERVICE_USER_ROLE,
     get_current_user,
     hash_password,
     is_admin_user,
@@ -59,6 +61,8 @@ ACCOUNT_STATUS_LABELS = {
     ACCOUNT_DEACTIVATED: "status-deactivated",
 }
 VALID_ACCOUNT_STATUSES = tuple(ACCOUNT_STATUS_LABELS.keys())
+USER_SCOPE_OPTIONS = ("service_user", "internal")
+ORDERED_INTERNAL_ROLES = ("monitoring", "admin", "super_admin")
 
 for directory in (STATIC_DIR, UPLOADS_DIR, OUTPUTS_DIR):
     directory.mkdir(parents=True, exist_ok=True)
@@ -179,10 +183,16 @@ def build_admin_user_management_context(
     request: Request,
     current_user: models.User,
     db: Session,
+    user_scope: str = "service_user",
     selected_status: str = "",
     message: str | None = None,
 ):
-    query = db.query(models.User).filter(models.User.role == "service_user")
+    is_internal_scope = user_scope == "internal"
+    query = db.query(models.User)
+    if is_internal_scope:
+        query = query.filter(models.User.role.in_(tuple(MONITORING_ROLES)))
+    else:
+        query = query.filter(models.User.role == SERVICE_USER_ROLE)
     if selected_status:
         query = query.filter(models.User.account_status == selected_status)
 
@@ -192,17 +202,27 @@ def build_admin_user_management_context(
         "app_name": "Sistem Pengajuan Dokumen",
         "current_user": current_user,
         "users": users,
+        "user_scope": user_scope,
+        "user_scope_options": USER_SCOPE_OPTIONS,
+        "page_title": "Daftar Pendaftar Pengguna Jasa" if not is_internal_scope else "Daftar Akun Petugas",
+        "page_description": "Pantau semua akun yang baru mendaftar, fokuskan antrean pada akun berstatus pending, lalu approve atau nonaktifkan langsung dari panel admin."
+        if not is_internal_scope
+        else "Kelola akun petugas monitoring, admin, dan super admin secara terpisah agar pembaruan data serta pengaturan akses lebih rapi.",
         "valid_account_statuses": VALID_ACCOUNT_STATUSES,
         "selected_status": selected_status,
         "account_status_labels": ACCOUNT_STATUS_LABELS,
         "message": message,
         "can_approve_user": is_admin_user(current_user),
         "can_deactivate_user": is_super_admin(current_user),
+        "can_manage_internal_users": is_super_admin(current_user),
         "pending_count": db.query(models.User)
         .filter(
-            models.User.role == "service_user",
+            models.User.role == SERVICE_USER_ROLE,
             models.User.account_status == ACCOUNT_PENDING,
         )
+        .count(),
+        "internal_count": db.query(models.User)
+        .filter(models.User.role.in_(tuple(MONITORING_ROLES)))
         .count(),
     }
 
@@ -221,11 +241,15 @@ def build_admin_user_detail_context(
         "current_user": current_user,
         "managed_user": managed_user,
         "account_status_labels": ACCOUNT_STATUS_LABELS,
+        "valid_account_statuses": VALID_ACCOUNT_STATUSES,
+        "internal_roles": ORDERED_INTERNAL_ROLES,
+        "is_service_user_target": managed_user.role == SERVICE_USER_ROLE,
         "message": message,
         "error": error,
         "can_approve_user": is_admin_user(current_user),
         "can_deactivate_user": is_super_admin(current_user),
         "can_change_password": is_super_admin(current_user),
+        "can_edit_user": is_super_admin(current_user),
     }
 
 
@@ -291,6 +315,7 @@ def admin_dashboard(
 @app.get("/admin/users", response_class=HTMLResponse)
 def admin_users(
     request: Request,
+    scope: str = "service_user",
     status_filter: str = "",
     message: str = "",
     db: Session = Depends(get_db),
@@ -300,12 +325,15 @@ def admin_users(
         return RedirectResponse(url="/login/petugas", status_code=status.HTTP_303_SEE_OTHER)
     require_admin_role(current_user)
 
+    selected_scope = scope if scope in USER_SCOPE_OPTIONS else "service_user"
+    if selected_scope == "internal" and not is_super_admin(current_user):
+        selected_scope = "service_user"
     selected_status = status_filter if status_filter in VALID_ACCOUNT_STATUSES else ""
     notice = message.strip() or None
     return templates.TemplateResponse(
         request,
         "admin_users.html",
-        build_admin_user_management_context(request, current_user, db, selected_status, notice),
+        build_admin_user_management_context(request, current_user, db, selected_scope, selected_status, notice),
     )
 
 
@@ -385,9 +413,11 @@ def admin_user_detail(
         return RedirectResponse(url="/login/petugas", status_code=status.HTTP_303_SEE_OTHER)
     require_admin_role(current_user)
 
-    managed_user = get_service_user_for_admin(db, user_id)
+    managed_user = get_managed_user_for_admin(db, user_id, allow_internal=is_super_admin(current_user))
     if not managed_user:
         return RedirectResponse(url="/admin/users", status_code=status.HTTP_303_SEE_OTHER)
+    if managed_user.role != SERVICE_USER_ROLE:
+        require_super_admin_role(current_user)
 
     return templates.TemplateResponse(
         request,
@@ -562,10 +592,26 @@ def get_service_user_for_admin(db: Session, user_id: int) -> models.User | None:
         db.query(models.User)
         .filter(
             models.User.id == user_id,
-            models.User.role == "service_user",
+            models.User.role == SERVICE_USER_ROLE,
         )
         .first()
     )
+
+
+def get_managed_user_for_admin(
+    db: Session,
+    user_id: int,
+    *,
+    allow_internal: bool = False,
+) -> models.User | None:
+    query = db.query(models.User).filter(models.User.id == user_id)
+    if allow_internal:
+        query = query.filter(
+            (models.User.role == SERVICE_USER_ROLE) | models.User.role.in_(tuple(MONITORING_ROLES))
+        )
+    else:
+        query = query.filter(models.User.role == SERVICE_USER_ROLE)
+    return query.first()
 
 
 @app.post("/admin/users/{user_id}/approve")
@@ -606,6 +652,109 @@ def deactivate_service_user(user_id: int, request: Request, db: Session = Depend
     )
 
 
+@app.post("/admin/users/{user_id}/update")
+def update_managed_user(
+    user_id: int,
+    request: Request,
+    username: str = Form(""),
+    company_name: str = Form(""),
+    email: str = Form(...),
+    business_id: str = Form(""),
+    pic_name: str = Form(...),
+    role: str = Form(""),
+    account_status: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    current_user = get_admin_user(request, db)
+    if not current_user:
+        return RedirectResponse(url="/login/petugas", status_code=status.HTTP_303_SEE_OTHER)
+    require_super_admin_role(current_user)
+
+    managed_user = get_managed_user_for_admin(db, user_id, allow_internal=True)
+    if not managed_user:
+        return RedirectResponse(url="/admin/users", status_code=status.HTTP_303_SEE_OTHER)
+
+    username = username.strip().lower()
+    company_name = company_name.strip()
+    email = email.strip().lower()
+    business_id = business_id.strip()
+    pic_name = pic_name.strip()
+    role = role.strip()
+    account_status = account_status.strip()
+
+    if not email or "@" not in email:
+        return RedirectResponse(
+            url=f"/admin/users/{user_id}?error=Email+tidak+valid",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+    if not pic_name:
+        return RedirectResponse(
+            url=f"/admin/users/{user_id}?error=Nama+wajib+diisi",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+    if account_status not in VALID_ACCOUNT_STATUSES:
+        return RedirectResponse(
+            url=f"/admin/users/{user_id}?error=Status+akun+tidak+valid",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    if managed_user.role == SERVICE_USER_ROLE:
+        if not company_name or not business_id:
+            return RedirectResponse(
+                url=f"/admin/users/{user_id}?error=Nama+perusahaan+dan+nomor+izin%2FNIB%2FNPWP+wajib+diisi",
+                status_code=status.HTTP_303_SEE_OTHER,
+            )
+    else:
+        if not username:
+            return RedirectResponse(
+                url=f"/admin/users/{user_id}?error=Username+petugas+wajib+diisi",
+                status_code=status.HTTP_303_SEE_OTHER,
+            )
+        if role not in ORDERED_INTERNAL_ROLES:
+            return RedirectResponse(
+                url=f"/admin/users/{user_id}?error=Role+petugas+tidak+valid",
+                status_code=status.HTTP_303_SEE_OTHER,
+            )
+
+    existing_email_user = db.query(models.User).filter(models.User.email == email, models.User.id != managed_user.id).first()
+    if existing_email_user:
+        return RedirectResponse(
+            url=f"/admin/users/{user_id}?error=Email+sudah+digunakan+akun+lain",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    if managed_user.role != SERVICE_USER_ROLE:
+        existing_username_user = (
+            db.query(models.User)
+            .filter(models.User.username == username, models.User.id != managed_user.id)
+            .first()
+        )
+        if existing_username_user:
+            return RedirectResponse(
+                url=f"/admin/users/{user_id}?error=Username+sudah+digunakan+akun+lain",
+                status_code=status.HTTP_303_SEE_OTHER,
+            )
+
+    managed_user.email = email
+    managed_user.pic_name = pic_name
+    managed_user.account_status = account_status
+    if managed_user.role == SERVICE_USER_ROLE:
+        managed_user.company_name = company_name
+        managed_user.business_id = business_id
+    else:
+        managed_user.username = username
+        managed_user.role = role
+
+    db.commit()
+    log_audit_event(db, request, current_user.id, "verify", f"EDIT-USER-{managed_user.id}")
+
+    target_scope = "service_user" if managed_user.role == SERVICE_USER_ROLE else "internal"
+    return RedirectResponse(
+        url=f"/admin/users/{user_id}?message=Data+akun+berhasil+diperbarui&scope={target_scope}",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
 @app.post("/admin/users/{user_id}/password")
 def update_service_user_password(
     user_id: int,
@@ -619,7 +768,7 @@ def update_service_user_password(
         return RedirectResponse(url="/login/petugas", status_code=status.HTTP_303_SEE_OTHER)
     require_super_admin_role(current_user)
 
-    managed_user = get_service_user_for_admin(db, user_id)
+    managed_user = get_managed_user_for_admin(db, user_id, allow_internal=True)
     if not managed_user:
         return RedirectResponse(url="/admin/users", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -639,8 +788,9 @@ def update_service_user_password(
     db.commit()
     log_audit_event(db, request, current_user.id, "verify", f"PASSWORD-{managed_user.id}")
 
+    success_label = "pengguna jasa" if managed_user.role == SERVICE_USER_ROLE else "petugas"
     return RedirectResponse(
-        url=f"/admin/users/{user_id}?message=Kata+sandi+pengguna+jasa+berhasil+diubah",
+        url=f"/admin/users/{user_id}?message=Kata+sandi+{success_label}+berhasil+diubah",
         status_code=status.HTTP_303_SEE_OTHER,
     )
 
