@@ -24,6 +24,7 @@ SELF_REGISTRATION_ROLES = {
     "super_admin",
 }
 INTERNAL_REGISTRATION_ROLES = MONITORING_ROLES
+INTERNAL_SIGNUP_ROLES = {"admin", "super_admin"}
 ACCOUNT_ACTIVE = "ACTIVE"
 ACCOUNT_PENDING = "PENDING"
 ACCOUNT_DEACTIVATED = "DEACTIVATED"
@@ -163,7 +164,7 @@ def register_internal_user_page(request: Request, templates: Jinja2Templates = D
         request,
         templates,
         register_type="internal",
-        form_data={"role": "monitoring"},
+        form_data={"role": "admin"},
     )
 
 
@@ -226,6 +227,16 @@ def register_user(
             templates,
             register_type=register_type,
             error="Untuk akun perusahaan, nama perusahaan dan nomor izin/NIB/NPWP wajib diisi.",
+            form_data=form_data,
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if role in INTERNAL_REGISTRATION_ROLES and role not in INTERNAL_SIGNUP_ROLES:
+        return render_register(
+            request,
+            templates,
+            register_type=register_type,
+            error="Jenis akun petugas yang dapat didaftarkan hanya admin dan super admin.",
             form_data=form_data,
             status_code=status.HTTP_400_BAD_REQUEST,
         )

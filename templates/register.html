@@ -11,8 +11,8 @@
         <section class="hidden rounded-[32px] bg-white/10 p-10 text-white shadow-2xl ring-1 ring-white/15 backdrop-blur lg:block">
             {% if register_type == "internal" %}
             <p class="text-sm font-semibold uppercase tracking-[0.35em] text-amber-200">Registrasi Petugas</p>
-            <h1 class="mt-5 text-4xl font-semibold leading-tight">Daftarkan akun petugas untuk area monitoring dan administrasi.</h1>
-            <p class="mt-5 max-w-xl text-sm leading-7 text-emerald-50/80">Pilih role internal, isi username, lalu masukkan kode registrasi internal yang valid.</p>
+            <h1 class="mt-5 text-4xl font-semibold leading-tight">Daftarkan akun admin untuk area administrasi dan pengelolaan sistem.</h1>
+            <p class="mt-5 max-w-xl text-sm leading-7 text-emerald-50/80">Pilih jenis akun admin, isi username, lalu masukkan kode registrasi internal yang valid.</p>
             {% else %}
             <p class="text-sm font-semibold uppercase tracking-[0.35em] text-emerald-200">Registrasi Pengguna Jasa</p>
             <h1 class="mt-5 text-4xl font-semibold leading-tight">Buat akun perusahaan untuk mengajukan dokumen dan memantau progresnya.</h1>
@@ -27,7 +27,7 @@
             </h1>
             <p class="mt-2 text-sm leading-6 text-slate-500">
                 {% if register_type == "internal" %}
-                Isi data petugas dan pilih role internal. Hanya pendaftar yang memiliki kode registrasi internal yang akan diterima.
+                Isi data petugas dan pilih jenis akun admin. Hanya pendaftar yang memiliki kode registrasi internal yang akan diterima.
                 {% else %}
                 Lengkapi data perusahaan untuk membuat akun Pengguna Jasa yang dipakai mengajukan dokumen.
                 {% endif %}
@@ -43,7 +43,6 @@
                 <div class="space-y-2">
                     <label for="role" class="text-sm font-semibold text-slate-700">Jenis Akun</label>
                     <select id="role" name="role" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
-                        <option value="monitoring" {% if form_data and form_data.role == 'monitoring' %}selected{% endif %}>Petugas Monitoring</option>
                         <option value="admin" {% if form_data and form_data.role == 'admin' %}selected{% endif %}>Admin</option>
                         <option value="super_admin" {% if form_data and form_data.role == 'super_admin' %}selected{% endif %}>Super Admin</option>
                     </select>
@@ -95,7 +94,7 @@
                 <div class="space-y-2">
                     <label for="registration_code" class="text-sm font-semibold text-slate-700">Kode Registrasi Internal</label>
                     <input id="registration_code" name="registration_code" type="password" value="{{ form_data.registration_code if form_data else '' }}" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
-                    <p class="text-xs text-slate-500">Wajib untuk role `monitoring`, `admin`, dan `super_admin`. Gunakan `PETUGAS_REGISTRATION_CODE` atau `SUPER_ADMIN_REGISTRATION_CODE` dari environment.</p>
+                    <p class="text-xs text-slate-500">Wajib untuk role `admin` dan `super_admin`. Gunakan `PETUGAS_REGISTRATION_CODE` atau `SUPER_ADMIN_REGISTRATION_CODE` dari environment.</p>
                 </div>
                 {% else %}
                 <input type="hidden" name="registration_code" value="">
