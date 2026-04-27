@@ -65,6 +65,7 @@ VALID_ACCOUNT_STATUSES = tuple(ACCOUNT_STATUS_LABELS.keys())
 USER_SCOPE_OPTIONS = ("service_user", "internal")
 INTERNAL_ACCOUNT_TYPE_OPTIONS = ("admin", "super_admin")
 INTERNAL_STAFF_ROLE_OPTIONS = ("OA", "Monitoring", "PIC", "Staff")
+SUPER_ADMIN_STAFF_ROLE_LABEL = "Semua"
 
 for directory in (STATIC_DIR, UPLOADS_DIR, OUTPUTS_DIR):
     directory.mkdir(parents=True, exist_ok=True)
@@ -246,6 +247,7 @@ def build_admin_user_detail_context(
         "valid_account_statuses": VALID_ACCOUNT_STATUSES,
         "internal_account_type_options": INTERNAL_ACCOUNT_TYPE_OPTIONS,
         "internal_staff_role_options": INTERNAL_STAFF_ROLE_OPTIONS,
+        "super_admin_staff_role_label": SUPER_ADMIN_STAFF_ROLE_LABEL,
         "internal_section_options": INTERNAL_SECTION_OPTIONS,
         "is_service_user_target": managed_user.role == SERVICE_USER_ROLE,
         "message": message,
@@ -723,9 +725,11 @@ def update_managed_user(
                 url=f"/admin/users/{user_id}?error=Jenis+akun+petugas+tidak+valid",
                 status_code=status.HTTP_303_SEE_OTHER,
             )
-        if staff_role and staff_role not in INTERNAL_STAFF_ROLE_OPTIONS:
+        if account_type == "super_admin":
+            staff_role = SUPER_ADMIN_STAFF_ROLE_LABEL
+        elif staff_role not in INTERNAL_STAFF_ROLE_OPTIONS:
             return RedirectResponse(
-                url=f"/admin/users/{user_id}?error=Role+kerja+petugas+tidak+valid",
+                url=f"/admin/users/{user_id}?error=Admin+wajib+memiliki+satu+role+kerja+yang+valid",
                 status_code=status.HTTP_303_SEE_OTHER,
             )
         if section_name and section_name not in INTERNAL_SECTION_OPTIONS:

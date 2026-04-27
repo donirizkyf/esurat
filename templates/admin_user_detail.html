@@ -77,7 +77,13 @@
                     </div>
                     <div class="rounded-2xl bg-slate-50 p-4">
                         <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Role</dt>
-                        <dd class="mt-2 text-sm font-medium text-slate-900">{{ managed_user.staff_role or '-' }}</dd>
+                        <dd class="mt-2 text-sm font-medium text-slate-900">
+                            {% if managed_user.role == 'super_admin' %}
+                                {{ super_admin_staff_role_label }}
+                            {% else %}
+                                {{ managed_user.staff_role or '-' }}
+                            {% endif %}
+                        </dd>
                     </div>
                     <div class="rounded-2xl bg-slate-50 p-4">
                         <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Seksi</dt>
@@ -148,11 +154,17 @@
                     <div>
                         <label for="staff_role" class="text-sm font-semibold text-slate-700">Role</label>
                         <select id="staff_role" name="staff_role" class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-100">
-                            <option value="">Belum diatur</option>
+                            {% if managed_user.role == 'super_admin' %}
+                            <option value="{{ super_admin_staff_role_label }}" selected>{{ super_admin_staff_role_label }}</option>
+                            {% else %}
                             {% for role_option in internal_staff_role_options %}
                             <option value="{{ role_option }}" {% if managed_user.staff_role == role_option %}selected{% endif %}>{{ role_option }}</option>
                             {% endfor %}
+                            {% endif %}
                         </select>
+                        <p class="mt-2 text-xs text-slate-500">
+                            Jika jenis akun `super_admin`, role otomatis mencakup semua akses. Jika `admin`, pilih satu role kerja saja.
+                        </p>
                     </div>
                     <div class="sm:col-span-2">
                         <label for="section_name" class="text-sm font-semibold text-slate-700">Seksi</label>
