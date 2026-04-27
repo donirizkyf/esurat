@@ -16,6 +16,7 @@ from app.auth import (
     ACCOUNT_DEACTIVATED,
     ACCOUNT_PENDING,
     get_current_user,
+    hash_password,
     is_admin_user,
     is_monitoring_user,
     is_service_user,
@@ -23,6 +24,7 @@ from app.auth import (
     get_session_secret,
     router as auth_router,
     session_uses_https,
+    verify_password,
 )
 from app.database import Base, engine, get_db
 from app import models
@@ -118,6 +120,22 @@ def build_dashboard_context(request: Request, current_user: models.User, db: Ses
     }
 
 
+def build_profile_context(
+    request: Request,
+    current_user: models.User,
+    *,
+    message: str | None = None,
+    error: str | None = None,
+):
+    return {
+        "request": request,
+        "app_name": "Sistem Pengajuan Dokumen",
+        "current_user": current_user,
+        "message": message,
+        "error": error,
+    }
+
+
 def get_admin_user(request: Request, db: Session) -> models.User | None:
     current_user = get_current_user(request, db)
     if not is_monitoring_user(current_user):
@@ -186,6 +204,28 @@ def build_admin_user_management_context(
             models.User.account_status == ACCOUNT_PENDING,
         )
         .count(),
+    }
+
+
+def build_admin_user_detail_context(
+    request: Request,
+    current_user: models.User,
+    managed_user: models.User,
+    *,
+    message: str | None = None,
+    error: str | None = None,
+):
+    return {
+        "request": request,
+        "app_name": "Sistem Pengajuan Dokumen",
+        "current_user": current_user,
+        "managed_user": managed_user,
+        "account_status_labels": ACCOUNT_STATUS_LABELS,
+        "message": message,
+        "error": error,
+        "can_approve_user": is_admin_user(current_user),
+        "can_deactivate_user": is_super_admin(current_user),
+        "can_change_password": is_super_admin(current_user),
     }
 
 
@@ -266,6 +306,99 @@ def admin_users(
         request,
         "admin_users.html",
         build_admin_user_management_context(request, current_user, db, selected_status, notice),
+    )
+
+
+@app.get("/profile", response_class=HTMLResponse)
+def profile_page(
+    request: Request,
+    message: str = "",
+    error: str = "",
+    db: Session = Depends(get_db),
+):
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return RedirectResponse(url="/login/pengguna-jasa", status_code=status.HTTP_303_SEE_OTHER)
+
+    return templates.TemplateResponse(
+        request,
+        "profile.html",
+        build_profile_context(
+            request,
+            current_user,
+            message=message.strip() or None,
+            error=error.strip() or None,
+        ),
+    )
+
+
+@app.post("/profile/password")
+def update_own_password(
+    request: Request,
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    confirm_password: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return RedirectResponse(url="/login/pengguna-jasa", status_code=status.HTTP_303_SEE_OTHER)
+
+    if not verify_password(current_password, current_user.password_hash):
+        return RedirectResponse(
+            url="/profile?error=Kata+sandi+saat+ini+tidak+sesuai",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    if len(new_password) < 8:
+        return RedirectResponse(
+            url="/profile?error=Kata+sandi+baru+minimal+8+karakter",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    if new_password != confirm_password:
+        return RedirectResponse(
+            url="/profile?error=Konfirmasi+kata+sandi+baru+tidak+cocok",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    current_user.password_hash = hash_password(new_password)
+    db.commit()
+    log_audit_event(db, request, current_user.id, "verify", f"PASSWORD-{current_user.id}")
+
+    return RedirectResponse(
+        url="/profile?message=Kata+sandi+berhasil+diubah",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+@app.get("/admin/users/{user_id}", response_class=HTMLResponse)
+def admin_user_detail(
+    user_id: int,
+    request: Request,
+    message: str = "",
+    error: str = "",
+    db: Session = Depends(get_db),
+):
+    current_user = get_admin_user(request, db)
+    if not current_user:
+        return RedirectResponse(url="/login/petugas", status_code=status.HTTP_303_SEE_OTHER)
+    require_admin_role(current_user)
+
+    managed_user = get_service_user_for_admin(db, user_id)
+    if not managed_user:
+        return RedirectResponse(url="/admin/users", status_code=status.HTTP_303_SEE_OTHER)
+
+    return templates.TemplateResponse(
+        request,
+        "admin_user_detail.html",
+        build_admin_user_detail_context(
+            request,
+            current_user,
+            managed_user,
+            message=message.strip() or None,
+            error=error.strip() or None,
+        ),
     )
 
 
@@ -469,6 +602,45 @@ def deactivate_service_user(user_id: int, request: Request, db: Session = Depend
 
     return RedirectResponse(
         url="/admin/users?message=Status+akun+berhasil+dinonaktifkan",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+@app.post("/admin/users/{user_id}/password")
+def update_service_user_password(
+    user_id: int,
+    request: Request,
+    new_password: str = Form(...),
+    confirm_password: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    current_user = get_admin_user(request, db)
+    if not current_user:
+        return RedirectResponse(url="/login/petugas", status_code=status.HTTP_303_SEE_OTHER)
+    require_super_admin_role(current_user)
+
+    managed_user = get_service_user_for_admin(db, user_id)
+    if not managed_user:
+        return RedirectResponse(url="/admin/users", status_code=status.HTTP_303_SEE_OTHER)
+
+    if len(new_password) < 8:
+        return RedirectResponse(
+            url=f"/admin/users/{user_id}?error=Kata+sandi+baru+minimal+8+karakter",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    if new_password != confirm_password:
+        return RedirectResponse(
+            url=f"/admin/users/{user_id}?error=Konfirmasi+kata+sandi+baru+tidak+cocok",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    managed_user.password_hash = hash_password(new_password)
+    db.commit()
+    log_audit_event(db, request, current_user.id, "verify", f"PASSWORD-{managed_user.id}")
+
+    return RedirectResponse(
+        url=f"/admin/users/{user_id}?message=Kata+sandi+pengguna+jasa+berhasil+diubah",
         status_code=status.HTTP_303_SEE_OTHER,
     )
 

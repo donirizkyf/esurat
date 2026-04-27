@@ -70,6 +70,9 @@
                         <td class="px-6 py-4 text-sm text-slate-600">{{ user.created_at.strftime("%Y-%m-%d %H:%M") if user.created_at else '-' }}</td>
                         <td class="px-6 py-4">
                             <div class="flex flex-col gap-2 sm:flex-row">
+                                <a href="/admin/users/{{ user.id }}" class="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                                    Detail
+                                </a>
                                 {% if can_approve_user and user.account_status != 'ACTIVE' %}
                                 <form method="post" action="/admin/users/{{ user.id }}/approve">
                                     <button type="submit" class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">

@@ -43,10 +43,20 @@
 
             <div class="px-6 pb-6">
                 {% if current_user %}
-                <div class="rounded-2xl bg-slate-900/70 p-4 ring-1 ring-slate-800">
+                <a href="/profile" class="block rounded-2xl bg-slate-900/70 p-4 ring-1 ring-slate-800 transition hover:bg-slate-900 hover:ring-slate-700 {% if request.url.path == '/profile' %}bg-slate-900 ring-slate-700{% endif %}">
                     <p class="text-sm text-slate-400">Masuk sebagai</p>
-                    <p class="mt-1 text-base font-semibold">{{ current_user.username }}</p>
-                </div>
+                    {% if current_user.role == 'service_user' %}
+                    <p class="mt-1 text-base font-semibold">{{ current_user.pic_name or current_user.username or current_user.email }}</p>
+                    <p class="mt-1 text-sm text-slate-300 break-all">{{ current_user.email }}</p>
+                    <div class="mt-3 rounded-xl bg-slate-950/70 px-3 py-2">
+                        <p class="text-[11px] font-medium uppercase tracking-[0.18em] text-sky-300">Nama Perusahaan</p>
+                        <p class="mt-1 text-sm font-semibold text-slate-100">{{ current_user.company_name or '-' }}</p>
+                    </div>
+                    {% else %}
+                    <p class="mt-1 text-base font-semibold">{{ current_user.username or current_user.pic_name or current_user.email }}</p>
+                    <p class="mt-1 text-sm text-slate-300 break-all">{{ current_user.email }}</p>
+                    {% endif %}
+                </a>
 
                 <nav class="mt-6 space-y-2">
                     {% if current_user.role == 'service_user' %}
@@ -67,6 +77,9 @@
                         Kelola Pendaftar
                     </a>
                     {% endif %}
+                    <a href="/profile" class="flex items-center rounded-2xl px-4 py-3 text-sm font-medium transition {% if request.url.path == '/profile' %}bg-slate-800 text-white{% else %}text-slate-300 hover:bg-slate-900 hover:text-white{% endif %}">
+                        Profil Akun
+                    </a>
                 </nav>
 
                 <div class="mt-6">
