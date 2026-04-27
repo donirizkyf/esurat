@@ -29,21 +29,23 @@
             </div>
 
             <dl class="mt-6 grid gap-4 sm:grid-cols-2">
+                {% if current_user.role == 'service_user' %}
                 <div class="rounded-2xl bg-slate-50 p-4">
                     <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Nama Perusahaan</dt>
                     <dd class="mt-2 text-sm font-medium text-slate-900">{{ current_user.company_name or '-' }}</dd>
                 </div>
                 <div class="rounded-2xl bg-slate-50 p-4">
-                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Nama PIC</dt>
-                    <dd class="mt-2 text-sm font-medium text-slate-900">{{ current_user.pic_name or '-' }}</dd>
+                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Nomor Izin / NIB / NPWP</dt>
+                    <dd class="mt-2 text-sm font-medium text-slate-900">{{ current_user.business_id or '-' }}</dd>
+                </div>
+                {% endif %}
+                <div class="rounded-2xl bg-slate-50 p-4">
+                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{% if current_user.role == 'service_user' %}Nama PIC{% else %}Nama{% endif %}</dt>
+                    <dd class="mt-2 text-sm font-medium text-slate-900">{{ current_user.pic_name or current_user.username or '-' }}</dd>
                 </div>
                 <div class="rounded-2xl bg-slate-50 p-4">
                     <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Email</dt>
                     <dd class="mt-2 text-sm font-medium text-slate-900 break-all">{{ current_user.email }}</dd>
-                </div>
-                <div class="rounded-2xl bg-slate-50 p-4">
-                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Nomor Izin / NIB / NPWP</dt>
-                    <dd class="mt-2 text-sm font-medium text-slate-900">{{ current_user.business_id or '-' }}</dd>
                 </div>
                 <div class="rounded-2xl bg-slate-50 p-4">
                     <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Role</dt>
