@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+
+{% block title %}Profil Akun{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <section class="rounded-[28px] bg-white p-6 shadow-panel ring-1 ring-slate-200 sm:p-8">
+        <p class="text-sm font-medium text-sky-700">Profil Akun</p>
+        <h1 class="mt-2 text-3xl font-semibold text-slate-900">Data Pribadi dan Keamanan</h1>
+        <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-500">Halaman ini menampilkan data saat pendaftaran dan memberi akses untuk mengganti kata sandi secara mandiri.</p>
+
+        {% if message %}
+        <div class="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">{{ message }}</div>
+        {% endif %}
+        {% if error %}
+        <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{{ error }}</div>
+        {% endif %}
+    </section>
+
+    <section class="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+        <div class="rounded-[28px] bg-white p-6 shadow-panel ring-1 ring-slate-200 sm:p-8">
+            <div class="flex items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-semibold text-slate-900">Informasi Pendaftaran</h2>
+                    <p class="mt-1 text-sm text-slate-500">Data yang tersimpan untuk akun yang sedang aktif.</p>
+                </div>
+                <div>{{ ui.account_status_badge(current_user.account_status) }}</div>
+            </div>
+
+            <dl class="mt-6 grid gap-4 sm:grid-cols-2">
+                <div class="rounded-2xl bg-slate-50 p-4">
+                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Nama Perusahaan</dt>
+                    <dd class="mt-2 text-sm font-medium text-slate-900">{{ current_user.company_name or '-' }}</dd>
+                </div>
+                <div class="rounded-2xl bg-slate-50 p-4">
+                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Nama PIC</dt>
+                    <dd class="mt-2 text-sm font-medium text-slate-900">{{ current_user.pic_name or '-' }}</dd>
+                </div>
+                <div class="rounded-2xl bg-slate-50 p-4">
+                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Email</dt>
+                    <dd class="mt-2 text-sm font-medium text-slate-900 break-all">{{ current_user.email }}</dd>
+                </div>
+                <div class="rounded-2xl bg-slate-50 p-4">
+                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Nomor Izin / NIB / NPWP</dt>
+                    <dd class="mt-2 text-sm font-medium text-slate-900">{{ current_user.business_id or '-' }}</dd>
+                </div>
+                <div class="rounded-2xl bg-slate-50 p-4">
+                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Role</dt>
+                    <dd class="mt-2 text-sm font-medium text-slate-900">{{ current_user.role }}</dd>
+                </div>
+                <div class="rounded-2xl bg-slate-50 p-4">
+                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Terdaftar</dt>
+                    <dd class="mt-2 text-sm font-medium text-slate-900">{{ current_user.created_at.strftime("%Y-%m-%d %H:%M") if current_user.created_at else '-' }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <div class="rounded-[28px] bg-white p-6 shadow-panel ring-1 ring-slate-200 sm:p-8">
+            <h2 class="text-xl font-semibold text-slate-900">Ganti Password</h2>
+            <p class="mt-1 text-sm text-slate-500">Gunakan kata sandi baru minimal 8 karakter.</p>
+
+            <form method="post" action="/profile/password" class="mt-6 space-y-4">
+                <div>
+                    <label for="current_password" class="text-sm font-semibold text-slate-700">Kata Sandi Saat Ini</label>
+                    <input id="current_password" name="current_password" type="password" required class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100">
+                </div>
+                <div>
+                    <label for="new_password" class="text-sm font-semibold text-slate-700">Kata Sandi Baru</label>
+                    <input id="new_password" name="new_password" type="password" minlength="8" required class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100">
+                </div>
+                <div>
+                    <label for="confirm_password" class="text-sm font-semibold text-slate-700">Konfirmasi Kata Sandi Baru</label>
+                    <input id="confirm_password" name="confirm_password" type="password" minlength="8" required class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100">
+                </div>
+                <button type="submit" class="inline-flex w-full items-center justify-center rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-700">
+                    Simpan Password Baru
+                </button>
+            </form>
+        </div>
+    </section>
+</div>
+{% endblock %}
