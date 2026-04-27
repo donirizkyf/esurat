@@ -72,8 +72,16 @@
                         <dd class="mt-2 text-sm font-medium text-slate-900">{{ managed_user.username or '-' }}</dd>
                     </div>
                     <div class="rounded-2xl bg-slate-50 p-4">
-                        <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Role Petugas</dt>
+                        <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Jenis Akun</dt>
                         <dd class="mt-2 text-sm font-medium text-slate-900">{{ managed_user.role }}</dd>
+                    </div>
+                    <div class="rounded-2xl bg-slate-50 p-4">
+                        <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Role</dt>
+                        <dd class="mt-2 text-sm font-medium text-slate-900">{{ managed_user.staff_role or '-' }}</dd>
+                    </div>
+                    <div class="rounded-2xl bg-slate-50 p-4">
+                        <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Seksi</dt>
+                        <dd class="mt-2 text-sm font-medium text-slate-900">{{ managed_user.section_name or '-' }}</dd>
                     </div>
                     {% endif %}
                     <div class="rounded-2xl bg-slate-50 p-4">
@@ -104,7 +112,7 @@
                     {% if is_service_user_target %}
                         Super admin dapat memperbarui data perusahaan, PIC, email, dan status akun.
                     {% else %}
-                        Super admin dapat memperbarui username, nama, email, role, dan status akun petugas.
+                        Super admin dapat memperbarui username, nama, jenis akun, role kerja, seksi, email, dan status akun petugas.
                     {% endif %}
                 </p>
 
@@ -115,7 +123,9 @@
                         <input id="company_name" name="company_name" type="text" value="{{ managed_user.company_name or '' }}" required class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
                     </div>
                     <input type="hidden" name="username" value="{{ managed_user.username or '' }}">
-                    <input type="hidden" name="role" value="{{ managed_user.role }}">
+                    <input type="hidden" name="account_type" value="{{ managed_user.role }}">
+                    <input type="hidden" name="staff_role" value="{{ managed_user.staff_role or '' }}">
+                    <input type="hidden" name="section_name" value="{{ managed_user.section_name or '' }}">
                     <div class="sm:col-span-2">
                         <label for="business_id" class="text-sm font-semibold text-slate-700">Nomor Izin / NIB / NPWP</label>
                         <input id="business_id" name="business_id" type="text" value="{{ managed_user.business_id or '' }}" required class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
@@ -128,10 +138,28 @@
                         <input id="username" name="username" type="text" value="{{ managed_user.username or '' }}" required class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-100">
                     </div>
                     <div>
-                        <label for="role" class="text-sm font-semibold text-slate-700">Role Petugas</label>
-                        <select id="role" name="role" class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-100">
-                            {% for role_option in internal_roles %}
-                            <option value="{{ role_option }}" {% if managed_user.role == role_option %}selected{% endif %}>{{ role_option }}</option>
+                        <label for="account_type" class="text-sm font-semibold text-slate-700">Jenis Akun</label>
+                        <select id="account_type" name="account_type" class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-100">
+                            {% for account_type_option in internal_account_type_options %}
+                            <option value="{{ account_type_option }}" {% if managed_user.role == account_type_option %}selected{% endif %}>{{ account_type_option }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="staff_role" class="text-sm font-semibold text-slate-700">Role</label>
+                        <select id="staff_role" name="staff_role" class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-100">
+                            <option value="">Belum diatur</option>
+                            {% for role_option in internal_staff_role_options %}
+                            <option value="{{ role_option }}" {% if managed_user.staff_role == role_option %}selected{% endif %}>{{ role_option }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label for="section_name" class="text-sm font-semibold text-slate-700">Seksi</label>
+                        <select id="section_name" name="section_name" class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-100">
+                            <option value="">Belum diatur</option>
+                            {% for section_option in internal_section_options %}
+                            <option value="{{ section_option }}" {% if managed_user.section_name == section_option %}selected{% endif %}>{{ section_option }}</option>
                             {% endfor %}
                         </select>
                     </div>

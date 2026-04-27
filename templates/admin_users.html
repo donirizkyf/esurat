@@ -64,7 +64,7 @@
                     <tr class="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                         <th class="px-6 py-4">{% if user_scope == 'service_user' %}Perusahaan{% else %}Petugas{% endif %}</th>
                         <th class="px-6 py-4">{% if user_scope == 'service_user' %}PIC{% else %}Kontak{% endif %}</th>
-                        <th class="px-6 py-4">{% if user_scope == 'service_user' %}Identitas{% else %}Role{% endif %}</th>
+                        <th class="px-6 py-4">{% if user_scope == 'service_user' %}Identitas{% else %}Role / Seksi{% endif %}</th>
                         <th class="px-6 py-4">Status</th>
                         <th class="px-6 py-4">Terdaftar</th>
                         <th class="px-6 py-4">Aksi</th>
@@ -89,12 +89,17 @@
                                 {% if user_scope == 'service_user' %}
                                     {{ user.username or '-' }}
                                 {% else %}
-                                    {{ user.role }}
+                                    Jenis Akun: {{ user.role }}
                                 {% endif %}
                             </div>
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-600">
-                            <div>{% if user_scope == 'service_user' %}{{ user.business_id or '-' }}{% else %}{{ user.role }}{% endif %}</div>
+                            {% if user_scope == 'service_user' %}
+                            <div>{{ user.business_id or '-' }}</div>
+                            {% else %}
+                            <div>{{ user.staff_role or '-' }}</div>
+                            <div class="mt-1 text-xs text-slate-500">{{ user.section_name or '-' }}</div>
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4">{{ ui.account_status_badge(user.account_status) }}</td>
                         <td class="px-6 py-4 text-sm text-slate-600">{{ user.created_at.strftime("%Y-%m-%d %H:%M") if user.created_at else '-' }}</td>

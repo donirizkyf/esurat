@@ -13,6 +13,8 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     business_id = Column(String(100), nullable=True)
     pic_name = Column(String(255), nullable=True)
+    staff_role = Column(String(50), nullable=True)
+    section_name = Column(String(150), nullable=True)
     password_hash = Column(String(255), nullable=False)
     role = Column(String(30), nullable=False, default="service_user")
     account_status = Column(String(20), nullable=False, default="PENDING")

@@ -25,6 +25,16 @@ SELF_REGISTRATION_ROLES = {
 }
 INTERNAL_REGISTRATION_ROLES = MONITORING_ROLES
 INTERNAL_SIGNUP_ROLES = {"admin", "super_admin"}
+INTERNAL_SECTION_OPTIONS = (
+    "Perijinan Cukai",
+    "Perijinan Pabean",
+    "Subbagian Umum",
+    "Penindakan dan Penyidikan",
+    "Perbendaharaan",
+    "Penyuluhan dan Layanan Informasi",
+    "Kepatuhan Internal",
+    "Pengolahan Data dan Administrasi Dokumen",
+)
 ACCOUNT_ACTIVE = "ACTIVE"
 ACCOUNT_PENDING = "PENDING"
 ACCOUNT_DEACTIVATED = "DEACTIVATED"
@@ -114,6 +124,7 @@ def render_register(
             "error": error,
             "success": success,
             "form_data": form_data or {},
+            "internal_section_options": INTERNAL_SECTION_OPTIONS,
         },
         status_code=status_code,
     )
@@ -164,7 +175,7 @@ def register_internal_user_page(request: Request, templates: Jinja2Templates = D
         request,
         templates,
         register_type="internal",
-        form_data={"role": "admin"},
+        form_data={"role": "admin", "section_name": INTERNAL_SECTION_OPTIONS[0]},
     )
 
 
@@ -177,6 +188,7 @@ def register_user(
     email: str = Form(...),
     business_id: str = Form(""),
     pic_name: str = Form(...),
+    section_name: str = Form(""),
     password: str = Form(...),
     registration_code: str = Form(""),
     db: Session = Depends(get_db),
@@ -188,6 +200,7 @@ def register_user(
     email = email.strip().lower()
     business_id = business_id.strip()
     pic_name = pic_name.strip()
+    section_name = section_name.strip()
     registration_code = registration_code.strip()
 
     form_data = {
@@ -197,6 +210,7 @@ def register_user(
         "email": email,
         "business_id": business_id,
         "pic_name": pic_name,
+        "section_name": section_name,
         "registration_code": registration_code,
     }
     register_type = "internal" if role in INTERNAL_REGISTRATION_ROLES else "service_user"
@@ -247,6 +261,16 @@ def register_user(
             templates,
             register_type=register_type,
             error="Username wajib diisi untuk akun petugas.",
+            form_data=form_data,
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if role in INTERNAL_REGISTRATION_ROLES and section_name not in INTERNAL_SECTION_OPTIONS:
+        return render_register(
+            request,
+            templates,
+            register_type=register_type,
+            error="Bagian petugas wajib dipilih dari daftar yang tersedia.",
             form_data=form_data,
             status_code=status.HTTP_400_BAD_REQUEST,
         )
@@ -314,6 +338,7 @@ def register_user(
         email=email,
         business_id=business_id if role == SERVICE_USER_ROLE else None,
         pic_name=pic_name,
+        section_name=section_name if role in INTERNAL_REGISTRATION_ROLES else None,
         password_hash=hash_password(password),
         role=role,
         account_status=account_status,

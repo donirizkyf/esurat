@@ -15,6 +15,7 @@ from app.auth import (
     ACCOUNT_ACTIVE,
     ACCOUNT_DEACTIVATED,
     ACCOUNT_PENDING,
+    INTERNAL_SECTION_OPTIONS,
     MONITORING_ROLES,
     SERVICE_USER_ROLE,
     get_current_user,
@@ -62,7 +63,8 @@ ACCOUNT_STATUS_LABELS = {
 }
 VALID_ACCOUNT_STATUSES = tuple(ACCOUNT_STATUS_LABELS.keys())
 USER_SCOPE_OPTIONS = ("service_user", "internal")
-ORDERED_INTERNAL_ROLES = ("monitoring", "admin", "super_admin")
+INTERNAL_ACCOUNT_TYPE_OPTIONS = ("admin", "super_admin")
+INTERNAL_STAFF_ROLE_OPTIONS = ("OA", "Monitoring", "PIC", "Staff")
 
 for directory in (STATIC_DIR, UPLOADS_DIR, OUTPUTS_DIR):
     directory.mkdir(parents=True, exist_ok=True)
@@ -207,7 +209,7 @@ def build_admin_user_management_context(
         "page_title": "Daftar Pendaftar Pengguna Jasa" if not is_internal_scope else "Daftar Akun Petugas",
         "page_description": "Pantau semua akun yang baru mendaftar, fokuskan antrean pada akun berstatus pending, lalu approve atau nonaktifkan langsung dari panel admin."
         if not is_internal_scope
-        else "Kelola akun petugas monitoring, admin, dan super admin secara terpisah agar pembaruan data serta pengaturan akses lebih rapi.",
+        else "Kelola akun petugas berdasarkan jenis akun admin/super admin, lalu atur role kerja dan seksi secara terpisah agar data internal lebih rapi.",
         "valid_account_statuses": VALID_ACCOUNT_STATUSES,
         "selected_status": selected_status,
         "account_status_labels": ACCOUNT_STATUS_LABELS,
@@ -242,7 +244,9 @@ def build_admin_user_detail_context(
         "managed_user": managed_user,
         "account_status_labels": ACCOUNT_STATUS_LABELS,
         "valid_account_statuses": VALID_ACCOUNT_STATUSES,
-        "internal_roles": ORDERED_INTERNAL_ROLES,
+        "internal_account_type_options": INTERNAL_ACCOUNT_TYPE_OPTIONS,
+        "internal_staff_role_options": INTERNAL_STAFF_ROLE_OPTIONS,
+        "internal_section_options": INTERNAL_SECTION_OPTIONS,
         "is_service_user_target": managed_user.role == SERVICE_USER_ROLE,
         "message": message,
         "error": error,
@@ -661,7 +665,9 @@ def update_managed_user(
     email: str = Form(...),
     business_id: str = Form(""),
     pic_name: str = Form(...),
-    role: str = Form(""),
+    account_type: str = Form(""),
+    staff_role: str = Form(""),
+    section_name: str = Form(""),
     account_status: str = Form(...),
     db: Session = Depends(get_db),
 ):
@@ -679,7 +685,9 @@ def update_managed_user(
     email = email.strip().lower()
     business_id = business_id.strip()
     pic_name = pic_name.strip()
-    role = role.strip()
+    account_type = account_type.strip()
+    staff_role = staff_role.strip()
+    section_name = section_name.strip()
     account_status = account_status.strip()
 
     if not email or "@" not in email:
@@ -710,9 +718,19 @@ def update_managed_user(
                 url=f"/admin/users/{user_id}?error=Username+petugas+wajib+diisi",
                 status_code=status.HTTP_303_SEE_OTHER,
             )
-        if role not in ORDERED_INTERNAL_ROLES:
+        if account_type not in INTERNAL_ACCOUNT_TYPE_OPTIONS:
             return RedirectResponse(
-                url=f"/admin/users/{user_id}?error=Role+petugas+tidak+valid",
+                url=f"/admin/users/{user_id}?error=Jenis+akun+petugas+tidak+valid",
+                status_code=status.HTTP_303_SEE_OTHER,
+            )
+        if staff_role and staff_role not in INTERNAL_STAFF_ROLE_OPTIONS:
+            return RedirectResponse(
+                url=f"/admin/users/{user_id}?error=Role+kerja+petugas+tidak+valid",
+                status_code=status.HTTP_303_SEE_OTHER,
+            )
+        if section_name and section_name not in INTERNAL_SECTION_OPTIONS:
+            return RedirectResponse(
+                url=f"/admin/users/{user_id}?error=Seksi+petugas+tidak+valid",
                 status_code=status.HTTP_303_SEE_OTHER,
             )
 
@@ -743,7 +761,9 @@ def update_managed_user(
         managed_user.business_id = business_id
     else:
         managed_user.username = username
-        managed_user.role = role
+        managed_user.role = account_type
+        managed_user.staff_role = staff_role or None
+        managed_user.section_name = section_name or None
 
     db.commit()
     log_audit_event(db, request, current_user.id, "verify", f"EDIT-USER-{managed_user.id}")

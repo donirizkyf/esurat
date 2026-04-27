@@ -12,7 +12,7 @@
             {% if register_type == "internal" %}
             <p class="text-sm font-semibold uppercase tracking-[0.35em] text-amber-200">Registrasi Petugas</p>
             <h1 class="mt-5 text-4xl font-semibold leading-tight">Daftarkan akun admin untuk area administrasi dan pengelolaan sistem.</h1>
-            <p class="mt-5 max-w-xl text-sm leading-7 text-emerald-50/80">Pilih jenis akun admin, isi username, lalu masukkan kode registrasi internal yang valid.</p>
+            <p class="mt-5 max-w-xl text-sm leading-7 text-emerald-50/80">Pilih jenis akun, isi data dasar petugas, tentukan bagian, lalu masukkan kode registrasi internal yang valid.</p>
             {% else %}
             <p class="text-sm font-semibold uppercase tracking-[0.35em] text-emerald-200">Registrasi Pengguna Jasa</p>
             <h1 class="mt-5 text-4xl font-semibold leading-tight">Buat akun perusahaan untuk mengajukan dokumen dan memantau progresnya.</h1>
@@ -27,7 +27,7 @@
             </h1>
             <p class="mt-2 text-sm leading-6 text-slate-500">
                 {% if register_type == "internal" %}
-                Isi data petugas dan pilih jenis akun admin. Hanya pendaftar yang memiliki kode registrasi internal yang akan diterima.
+                Isi data petugas, pilih jenis akun, lalu tentukan bagian. Role kerja dan pengaturan lanjutan hanya dikelola oleh super admin.
                 {% else %}
                 Lengkapi data perusahaan untuk membuat akun Pengguna Jasa yang dipakai mengajukan dokumen.
                 {% endif %}
@@ -56,6 +56,14 @@
                     <label for="username" class="text-sm font-semibold text-slate-700">Username</label>
                     <input id="username" name="username" type="text" value="{{ form_data.username if form_data else '' }}" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
                     <p class="text-xs text-slate-500">Wajib untuk akun petugas.</p>
+                </div>
+                <div class="space-y-2">
+                    <label for="section_name" class="text-sm font-semibold text-slate-700">Bagian</label>
+                    <select id="section_name" name="section_name" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                        {% for section_option in internal_section_options %}
+                        <option value="{{ section_option }}" {% if form_data and form_data.section_name == section_option %}selected{% endif %}>{{ section_option }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 {% endif %}
 
@@ -98,6 +106,7 @@
                 </div>
                 {% else %}
                 <input type="hidden" name="registration_code" value="">
+                <input type="hidden" name="section_name" value="">
                 {% endif %}
                 <button type="submit" class="inline-flex w-full items-center justify-center rounded-2xl {% if register_type == 'internal' %}bg-amber-600 hover:bg-amber-700{% else %}bg-emerald-600 hover:bg-emerald-700{% endif %} px-5 py-3 text-sm font-semibold text-white transition">
                     {% if register_type == "internal" %}Buat Akun Petugas{% else %}Buat Akun Pengguna Jasa{% endif %}

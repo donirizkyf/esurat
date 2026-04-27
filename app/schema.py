@@ -29,6 +29,10 @@ def sync_schema() -> None:
                 migrations.append("ALTER TABLE users ADD COLUMN business_id VARCHAR(100)")
             if "pic_name" not in columns:
                 migrations.append("ALTER TABLE users ADD COLUMN pic_name VARCHAR(255)")
+            if "staff_role" not in columns:
+                migrations.append("ALTER TABLE users ADD COLUMN staff_role VARCHAR(50)")
+            if "section_name" not in columns:
+                migrations.append("ALTER TABLE users ADD COLUMN section_name VARCHAR(150)")
             if "account_status" not in columns:
                 migrations.append("ALTER TABLE users ADD COLUMN account_status VARCHAR(20) DEFAULT 'ACTIVE'")
 
