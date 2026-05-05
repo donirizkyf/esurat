@@ -1,9 +1,9 @@
 {% macro status_badge(status) -%}
     {% set classes = {
-        "DIAJUKAN": "bg-sky-100 text-sky-700 ring-sky-200",
-        "MENUNGGU_VERIFIKASI_PIC": "bg-violet-100 text-violet-700 ring-violet-200",
-        "DITOLAK": "bg-rose-100 text-rose-700 ring-rose-200",
-        "TERDISTRIBUSI_KE_STAFF": "bg-amber-100 text-amber-700 ring-amber-200",
+        "PENOMORAN_AGENDA": "bg-sky-100 text-sky-700 ring-sky-200",
+        "VERIFIKASI_PETUGAS": "bg-violet-100 text-violet-700 ring-violet-200",
+        "PENOLAKAN": "bg-rose-100 text-rose-700 ring-rose-200",
+        "PENELITIAN_DOKUMEN": "bg-amber-100 text-amber-700 ring-amber-200",
         "SELESAI": "bg-cyan-100 text-cyan-700 ring-cyan-200"
     } %}
     <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 {{ classes.get(status, 'bg-slate-100 text-slate-700 ring-slate-200') }}">

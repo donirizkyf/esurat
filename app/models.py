@@ -41,7 +41,7 @@ class DocumentSubmission(Base):
     agenda_number = Column(String(100), nullable=True, index=True)
     assigned_section = Column(String(150), nullable=True)
     assigned_staff_role = Column(String(50), nullable=True)
-    status = Column(String(50), nullable=False, default="DIAJUKAN")
+    status = Column(String(50), nullable=False, default="PENOMORAN_AGENDA")
     admin_notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     user = relationship("User", back_populates="submissions")

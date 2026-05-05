@@ -103,10 +103,16 @@ def sync_schema() -> None:
                 )
             if "status" in current_submission_columns:
                 connection.execute(
-                    "UPDATE document_submissions SET status = 'MENUNGGU_VERIFIKASI_PIC' WHERE status = 'DIVERIFIKASI'"
+                    "UPDATE document_submissions SET status = 'PENOMORAN_AGENDA' WHERE status = 'DIAJUKAN'"
                 )
                 connection.execute(
-                    "UPDATE document_submissions SET status = 'TERDISTRIBUSI_KE_STAFF' WHERE status IN ('DITERIMA', 'DIPROSES')"
+                    "UPDATE document_submissions SET status = 'VERIFIKASI_PETUGAS' WHERE status IN ('DIVERIFIKASI', 'MENUNGGU_VERIFIKASI_PIC')"
+                )
+                connection.execute(
+                    "UPDATE document_submissions SET status = 'PENOLAKAN' WHERE status = 'DITOLAK'"
+                )
+                connection.execute(
+                    "UPDATE document_submissions SET status = 'PENELITIAN_DOKUMEN' WHERE status IN ('DITERIMA', 'DIPROSES', 'TERDISTRIBUSI_KE_STAFF')"
                 )
         connection.commit()
     finally:
