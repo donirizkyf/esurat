@@ -1,16 +1,21 @@
 {% extends "base.html" %}
 {% import "macros.html" as ui %}
 
-{% block title %}Dasbor Admin{% endblock %}
+{% block title %}Monitoring Surat{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
     <section class="rounded-[28px] bg-white p-6 shadow-panel ring-1 ring-slate-200 sm:p-8">
         <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-                <p class="text-sm font-medium text-emerald-700">Tinjauan Admin</p>
-                <h1 class="mt-2 text-3xl font-semibold text-slate-900">Semua Dokumen yang Diajukan</h1>
-                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-500">Saring antrean berdasarkan status, buka setiap pengajuan, dan lanjutkan proses peninjauan, pemrosesan, atau penyelesaian dari satu ruang kerja responsif.</p>
+                <p class="text-sm font-medium text-emerald-700">Menu Petugas</p>
+                <h1 class="mt-2 text-3xl font-semibold text-slate-900">Monitoring Surat</h1>
+                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+                    Pantau progres surat masuk dari pengguna jasa, cek distribusi ke seksi, verifikasi PIC, nomor agenda otomatis, sampai upload surat jawaban oleh staff.
+                </p>
+                <div class="mt-4 inline-flex rounded-2xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
+                    Fungsi Kerja Anda: {{ staff_function }}
+                </div>
             </div>
             <form class="grid gap-3 sm:grid-cols-[minmax(220px,1fr)_auto]" method="get" action="/admin/dashboard">
                 <select id="status_filter" name="status_filter" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
@@ -24,6 +29,24 @@
                 </button>
             </form>
         </div>
+
+        <div class="mt-6 grid gap-4 md:grid-cols-3">
+            <div class="rounded-[24px] bg-sky-50 p-5 ring-1 ring-sky-100">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Menunggu OA</p>
+                <p class="mt-2 text-3xl font-semibold text-sky-900">{{ waiting_distribution_count }}</p>
+                <p class="mt-1 text-sm text-sky-800">Surat baru yang belum didistribusikan.</p>
+            </div>
+            <div class="rounded-[24px] bg-violet-50 p-5 ring-1 ring-violet-100">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-violet-700">Menunggu PIC</p>
+                <p class="mt-2 text-3xl font-semibold text-violet-900">{{ waiting_pic_count }}</p>
+                <p class="mt-1 text-sm text-violet-800">Surat yang masih menunggu verifikasi seksi.</p>
+            </div>
+            <div class="rounded-[24px] bg-amber-50 p-5 ring-1 ring-amber-100">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Masuk ke Staff</p>
+                <p class="mt-2 text-3xl font-semibold text-amber-900">{{ waiting_staff_count }}</p>
+                <p class="mt-1 text-sm text-amber-800">Surat yang sudah punya nomor agenda dan menunggu jawaban.</p>
+            </div>
+        </div>
     </section>
 
     <section class="rounded-[28px] bg-white shadow-panel ring-1 ring-slate-200">
@@ -32,29 +55,38 @@
             <table class="min-w-full divide-y divide-slate-200">
                 <thead class="bg-slate-50">
                     <tr class="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                        <th class="px-6 py-4">Pengguna</th>
-                        <th class="px-6 py-4">Perihal</th>
-                        <th class="px-6 py-4">Tanggal</th>
-                        <th class="px-6 py-4">Status</th>
-                        <th class="px-6 py-4">Detail</th>
+                        <th class="px-6 py-4">Surat Masuk</th>
+                        <th class="px-6 py-4">Pemohon</th>
+                        <th class="px-6 py-4">Seksi / Fungsi</th>
+                        <th class="px-6 py-4">Agenda</th>
+                        <th class="px-6 py-4">Progres</th>
+                        <th class="px-6 py-4">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
                     {% for submission in submissions %}
-                    <tr class="transition hover:bg-slate-50">
+                    <tr class="align-top transition hover:bg-slate-50">
                         <td class="px-6 py-4">
-                            <div class="font-semibold text-slate-900">{{ submission.user.username }}</div>
+                            <div class="font-semibold text-slate-900">{{ submission.subject }}</div>
                             <div class="mt-1 text-xs text-slate-500">{{ submission.document_id }}</div>
+                            <div class="mt-2 text-xs font-medium text-emerald-700">{{ submission.bagian }}</div>
                         </td>
                         <td class="px-6 py-4">
-                            <div class="text-sm font-medium text-slate-700">{{ submission.subject }}</div>
-                            <div class="mt-1 text-xs font-medium text-emerald-700">{{ submission.bagian }}</div>
+                            <div class="text-sm font-medium text-slate-900">{{ submission.user.company_name or submission.user.pic_name or submission.user.email }}</div>
+                            <div class="mt-1 text-xs text-slate-500">{{ submission.user.email }}</div>
                         </td>
-                        <td class="px-6 py-4 text-sm text-slate-600">{{ submission.document_date.strftime("%Y-%m-%d") }}</td>
-                        <td class="px-6 py-4">{{ ui.status_badge(submission.status) }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-600">
+                            <div>{{ submission.assigned_section or submission.bagian }}</div>
+                            <div class="mt-1 text-xs text-slate-500">{{ submission.assigned_staff_role or 'OA' }}</div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-slate-600">{{ submission.agenda_number or '-' }}</td>
+                        <td class="px-6 py-4">
+                            <div>{{ ui.status_badge(submission.status) }}</div>
+                            <p class="mt-2 max-w-xs text-xs leading-5 text-slate-500">{{ submission_progress_label(submission) }}</p>
+                        </td>
                         <td class="px-6 py-4">
                             <a href="/admin/documents/{{ submission.document_id }}" class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-                                Lihat Detail
+                                Buka Surat
                             </a>
                         </td>
                     </tr>
@@ -64,8 +96,8 @@
         </div>
         {% else %}
         <div class="px-6 py-14 text-center">
-            <h3 class="text-lg font-semibold text-slate-900">Tidak ada dokumen yang cocok</h3>
-            <p class="mt-2 text-sm text-slate-500">Coba hapus filter atau tunggu pengajuan baru masuk ke antrean peninjauan.</p>
+            <h3 class="text-lg font-semibold text-slate-900">Tidak ada surat yang cocok</h3>
+            <p class="mt-2 text-sm text-slate-500">Coba ubah filter atau tunggu surat baru masuk ke antrean petugas.</p>
         </div>
         {% endif %}
     </section>

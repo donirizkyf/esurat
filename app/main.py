@@ -50,10 +50,9 @@ VALID_BAGIAN_OPTIONS = (
 DEFAULT_BAGIAN = VALID_BAGIAN_OPTIONS[0]
 STATUS_LABELS = {
     "DIAJUKAN": "status-submitted",
-    "DIVERIFIKASI": "status-verified",
+    "MENUNGGU_VERIFIKASI_PIC": "status-verified",
     "DITOLAK": "status-rejected",
-    "DITERIMA": "status-accepted",
-    "DIPROSES": "status-processing",
+    "TERDISTRIBUSI_KE_STAFF": "status-processing",
     "SELESAI": "status-complete",
 }
 VALID_STATUSES = tuple(STATUS_LABELS.keys())
@@ -67,6 +66,10 @@ USER_SCOPE_OPTIONS = ("service_user", "internal")
 INTERNAL_ACCOUNT_TYPE_OPTIONS = ("admin", "super_admin")
 INTERNAL_STAFF_ROLE_OPTIONS = ("OA", "Monitoring", "PIC", "Staff")
 SUPER_ADMIN_STAFF_ROLE_LABEL = "Semua"
+STAFF_ROLE_OA = "OA"
+STAFF_ROLE_MONITORING = "Monitoring"
+STAFF_ROLE_PIC = "PIC"
+STAFF_ROLE_STAFF = "Staff"
 
 for directory in (STATIC_DIR, UPLOADS_DIR, OUTPUTS_DIR):
     directory.mkdir(parents=True, exist_ok=True)
@@ -161,6 +164,80 @@ def require_super_admin_role(user: models.User | None) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Akses super admin diperlukan.")
 
 
+def get_staff_function(user: models.User | None) -> str:
+    if not user:
+        return ""
+    if is_super_admin(user):
+        return SUPER_ADMIN_STAFF_ROLE_LABEL
+    normalized = (user.staff_role or DEFAULT_INTERNAL_STAFF_ROLE).strip()
+    if normalized not in INTERNAL_STAFF_ROLE_OPTIONS:
+        return DEFAULT_INTERNAL_STAFF_ROLE
+    return normalized
+
+
+def can_route_document(user: models.User | None) -> bool:
+    return is_super_admin(user) or get_staff_function(user) == STAFF_ROLE_OA
+
+
+def can_verify_document(user: models.User | None) -> bool:
+    return is_super_admin(user) or get_staff_function(user) == STAFF_ROLE_PIC
+
+
+def can_upload_response_document(user: models.User | None) -> bool:
+    return is_super_admin(user) or get_staff_function(user) == STAFF_ROLE_STAFF
+
+
+def can_monitor_document(user: models.User | None) -> bool:
+    return bool(user and is_admin_user(user))
+
+
+def can_access_internal_scope(user: models.User | None) -> bool:
+    return is_super_admin(user)
+
+
+def build_section_code(section_name: str) -> str:
+    tokens = [token for token in "".join(ch if ch.isalnum() else " " for ch in section_name.upper()).split() if token]
+    if not tokens:
+        return "SURAT"
+    return "".join(token[0] if token.isalpha() else token for token in tokens)[:12]
+
+
+def generate_agenda_number(db: Session, section_name: str) -> str:
+    code = build_section_code(section_name)
+    today_stamp = datetime.now().strftime("%Y%m%d")
+    prefix = f"AGD/{code}/{today_stamp}/"
+    existing_count = (
+        db.query(models.DocumentSubmission)
+        .filter(models.DocumentSubmission.agenda_number.like(f"{prefix}%"))
+        .count()
+    )
+    return f"{prefix}{existing_count + 1:04d}"
+
+
+def get_submission_progress_label(submission: models.DocumentSubmission) -> str:
+    if submission.status == "DIAJUKAN":
+        return "Menunggu distribusi OA"
+    if submission.status == "MENUNGGU_VERIFIKASI_PIC":
+        return f"Menunggu verifikasi PIC seksi {submission.assigned_section or submission.bagian}"
+    if submission.status == "TERDISTRIBUSI_KE_STAFF":
+        return f"Sudah masuk ke staff seksi {submission.assigned_section or submission.bagian}"
+    if submission.status == "DITOLAK":
+        return "Ditolak PIC, pengguna jasa harus unggah surat baru"
+    if submission.status == "SELESAI":
+        return "Surat jawaban sudah diunggah petugas"
+    return submission.status
+
+
+def can_operate_on_section(user: models.User | None, section_name: str | None) -> bool:
+    if is_super_admin(user):
+        return True
+    if not user:
+        return False
+    if not section_name:
+        return True
+    return (user.section_name or "").strip() == section_name.strip()
+
+
 def build_admin_dashboard_context(
     request: Request,
     current_user: models.User,
@@ -180,6 +257,21 @@ def build_admin_dashboard_context(
         "status_labels": STATUS_LABELS,
         "valid_statuses": VALID_STATUSES,
         "selected_status": selected_status,
+        "staff_function": get_staff_function(current_user),
+        "can_route_document": can_route_document(current_user),
+        "can_verify_document": can_verify_document(current_user),
+        "can_upload_response_document": can_upload_response_document(current_user),
+        "can_monitor_document": can_monitor_document(current_user),
+        "submission_progress_label": get_submission_progress_label,
+        "waiting_distribution_count": db.query(models.DocumentSubmission)
+        .filter(models.DocumentSubmission.status == "DIAJUKAN")
+        .count(),
+        "waiting_pic_count": db.query(models.DocumentSubmission)
+        .filter(models.DocumentSubmission.status == "MENUNGGU_VERIFIKASI_PIC")
+        .count(),
+        "waiting_staff_count": db.query(models.DocumentSubmission)
+        .filter(models.DocumentSubmission.status == "TERDISTRIBUSI_KE_STAFF")
+        .count(),
     }
 
 
@@ -539,7 +631,6 @@ def download_admin_original_document(document_id: str, request: Request, db: Ses
     current_user = get_admin_user(request, db)
     if not current_user:
         return RedirectResponse(url="/login/petugas", status_code=status.HTTP_303_SEE_OTHER)
-    require_admin_role(current_user)
 
     submission = (
         db.query(models.DocumentSubmission)
@@ -558,6 +649,32 @@ def download_admin_original_document(document_id: str, request: Request, db: Ses
         path=upload_path,
         media_type="application/pdf",
         filename=submission.original_filename or submission.stored_filename,
+    )
+
+
+@app.get("/admin/documents/{document_id}/result")
+def download_admin_result_document(document_id: str, request: Request, db: Session = Depends(get_db)):
+    current_user = get_admin_user(request, db)
+    if not current_user:
+        return RedirectResponse(url="/login/petugas", status_code=status.HTTP_303_SEE_OTHER)
+
+    submission = (
+        db.query(models.DocumentSubmission)
+        .filter(models.DocumentSubmission.document_id == document_id)
+        .first()
+    )
+    if not submission or not submission.result_stored_filename:
+        return RedirectResponse(url=f"/admin/documents/{document_id}", status_code=status.HTTP_303_SEE_OTHER)
+
+    result_path = OUTPUTS_DIR / submission.result_stored_filename
+    if not result_path.exists():
+        return RedirectResponse(url=f"/admin/documents/{document_id}", status_code=status.HTTP_303_SEE_OTHER)
+
+    log_audit_event(db, request, current_user.id, "download", submission.document_id)
+    return FileResponse(
+        path=result_path,
+        media_type="application/pdf",
+        filename=submission.result_original_filename or submission.result_stored_filename,
     )
 
 
@@ -586,11 +703,14 @@ def admin_document_detail(document_id: str, request: Request, db: Session = Depe
             "submission": submission,
             "status_labels": STATUS_LABELS,
             "upload_error": None,
-            "can_reject_document": True,
-            "can_approve_document": is_admin_user(current_user),
-            "can_process_document": is_admin_user(current_user),
-            "can_upload_result": is_admin_user(current_user),
-            "can_download_original": is_admin_user(current_user),
+            "staff_function": get_staff_function(current_user),
+            "submission_progress": get_submission_progress_label(submission),
+            "can_route_document": can_route_document(current_user),
+            "can_verify_document": can_verify_document(current_user),
+            "can_upload_response_document": can_upload_response_document(current_user),
+            "can_download_original": True,
+            "can_download_result": bool(submission.result_stored_filename),
+            "internal_section_options": INTERNAL_SECTION_OPTIONS,
         },
     )
 
@@ -823,55 +943,84 @@ def update_service_user_password(
     )
 
 
-@app.post("/admin/documents/{document_id}/approve")
-def approve_document(document_id: str, request: Request, db: Session = Depends(get_db)):
-    current_user = get_admin_user(request, db)
-    if not current_user:
-        return RedirectResponse(url="/login/petugas", status_code=status.HTTP_303_SEE_OTHER)
-    require_admin_role(current_user)
-
-    submission = (
+def get_internal_submission(db: Session, document_id: str) -> models.DocumentSubmission | None:
+    return (
         db.query(models.DocumentSubmission)
+        .join(models.User)
         .filter(models.DocumentSubmission.document_id == document_id)
         .first()
     )
-    if submission:
-        submission.status = "DITERIMA"
-        submission.admin_notes = None
-        db.commit()
-        log_audit_event(db, request, current_user.id, "verify", submission.document_id)
-
-    return RedirectResponse(
-        url=f"/admin/documents/{document_id}",
-        status_code=status.HTTP_303_SEE_OTHER,
-    )
 
 
-@app.post("/admin/documents/{document_id}/process")
-def process_document(document_id: str, request: Request, db: Session = Depends(get_db)):
+@app.post("/admin/documents/{document_id}/distribute")
+def distribute_document(
+    document_id: str,
+    request: Request,
+    target_staff_role: str = Form(...),
+    section_name: str = Form(...),
+    db: Session = Depends(get_db),
+):
     current_user = get_admin_user(request, db)
     if not current_user:
         return RedirectResponse(url="/login/petugas", status_code=status.HTTP_303_SEE_OTHER)
-    require_admin_role(current_user)
+    if not can_route_document(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Hanya OA atau super admin yang dapat mendistribusikan surat.")
 
-    submission = (
-        db.query(models.DocumentSubmission)
-        .filter(models.DocumentSubmission.document_id == document_id)
-        .first()
-    )
-    if submission:
-        submission.status = "DIPROSES"
-        db.commit()
-        log_audit_event(db, request, current_user.id, "verify", submission.document_id)
+    submission = get_internal_submission(db, document_id)
+    if not submission:
+        return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
 
-    return RedirectResponse(
-        url=f"/admin/documents/{document_id}",
-        status_code=status.HTTP_303_SEE_OTHER,
-    )
+    cleaned_target = target_staff_role.strip()
+    cleaned_section = section_name.strip()
+    if cleaned_target not in {STAFF_ROLE_PIC, STAFF_ROLE_STAFF}:
+        return RedirectResponse(url=f"/admin/documents/{document_id}", status_code=status.HTTP_303_SEE_OTHER)
+    if cleaned_section not in INTERNAL_SECTION_OPTIONS:
+        return RedirectResponse(url=f"/admin/documents/{document_id}", status_code=status.HTTP_303_SEE_OTHER)
+    if submission.status in {"DITOLAK", "SELESAI"}:
+        return RedirectResponse(url=f"/admin/documents/{document_id}", status_code=status.HTTP_303_SEE_OTHER)
+
+    submission.assigned_section = cleaned_section
+    submission.assigned_staff_role = cleaned_target
+    submission.admin_notes = None
+    if cleaned_target == STAFF_ROLE_PIC:
+        submission.status = "MENUNGGU_VERIFIKASI_PIC"
+        submission.agenda_number = None
+    else:
+        submission.status = "TERDISTRIBUSI_KE_STAFF"
+        submission.agenda_number = generate_agenda_number(db, cleaned_section)
+
+    db.commit()
+    log_audit_event(db, request, current_user.id, "verify", submission.document_id)
+    return RedirectResponse(url=f"/admin/documents/{document_id}", status_code=status.HTTP_303_SEE_OTHER)
 
 
-@app.post("/admin/documents/{document_id}/reject")
-def reject_document(
+@app.post("/admin/documents/{document_id}/verify-accept")
+def verify_document_accept(document_id: str, request: Request, db: Session = Depends(get_db)):
+    current_user = get_admin_user(request, db)
+    if not current_user:
+        return RedirectResponse(url="/login/petugas", status_code=status.HTTP_303_SEE_OTHER)
+    if not can_verify_document(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Hanya PIC atau super admin yang dapat memverifikasi surat.")
+
+    submission = get_internal_submission(db, document_id)
+    if not submission:
+        return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+    if submission.status != "MENUNGGU_VERIFIKASI_PIC":
+        return RedirectResponse(url=f"/admin/documents/{document_id}", status_code=status.HTTP_303_SEE_OTHER)
+    if not can_operate_on_section(current_user, submission.assigned_section):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="PIC hanya dapat memverifikasi surat pada seksinya.")
+
+    submission.status = "TERDISTRIBUSI_KE_STAFF"
+    submission.assigned_staff_role = STAFF_ROLE_STAFF
+    submission.agenda_number = submission.agenda_number or generate_agenda_number(db, submission.assigned_section or submission.bagian)
+    submission.admin_notes = None
+    db.commit()
+    log_audit_event(db, request, current_user.id, "verify", submission.document_id)
+    return RedirectResponse(url=f"/admin/documents/{document_id}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@app.post("/admin/documents/{document_id}/verify-reject")
+def verify_document_reject(
     document_id: str,
     request: Request,
     notes: str = Form(...),
@@ -880,23 +1029,27 @@ def reject_document(
     current_user = get_admin_user(request, db)
     if not current_user:
         return RedirectResponse(url="/login/petugas", status_code=status.HTTP_303_SEE_OTHER)
+    if not can_verify_document(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Hanya PIC atau super admin yang dapat menolak surat.")
 
-    submission = (
-        db.query(models.DocumentSubmission)
-        .filter(models.DocumentSubmission.document_id == document_id)
-        .first()
-    )
+    submission = get_internal_submission(db, document_id)
+    if not submission:
+        return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+    if submission.status != "MENUNGGU_VERIFIKASI_PIC":
+        return RedirectResponse(url=f"/admin/documents/{document_id}", status_code=status.HTTP_303_SEE_OTHER)
+    if not can_operate_on_section(current_user, submission.assigned_section):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="PIC hanya dapat menolak surat pada seksinya.")
+
     cleaned_notes = notes.strip()
-    if submission and cleaned_notes:
+    if cleaned_notes:
         submission.status = "DITOLAK"
         submission.admin_notes = cleaned_notes
+        submission.assigned_staff_role = STAFF_ROLE_PIC
+        submission.agenda_number = None
         db.commit()
         log_audit_event(db, request, current_user.id, "verify", submission.document_id)
 
-    return RedirectResponse(
-        url=f"/admin/documents/{document_id}",
-        status_code=status.HTTP_303_SEE_OTHER,
-    )
+    return RedirectResponse(url=f"/admin/documents/{document_id}", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @app.post("/admin/documents/{document_id}/result", response_class=HTMLResponse)
@@ -909,16 +1062,16 @@ async def upload_result_document(
     current_user = get_admin_user(request, db)
     if not current_user:
         return RedirectResponse(url="/login/petugas", status_code=status.HTTP_303_SEE_OTHER)
-    require_admin_role(current_user)
+    if not can_upload_response_document(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Hanya Staff atau super admin yang dapat mengunggah surat jawaban.")
 
-    submission = (
-        db.query(models.DocumentSubmission)
-        .join(models.User)
-        .filter(models.DocumentSubmission.document_id == document_id)
-        .first()
-    )
+    submission = get_internal_submission(db, document_id)
     if not submission:
         return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+    if submission.status != "TERDISTRIBUSI_KE_STAFF":
+        return RedirectResponse(url=f"/admin/documents/{document_id}", status_code=status.HTTP_303_SEE_OTHER)
+    if not can_operate_on_section(current_user, submission.assigned_section):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Staff hanya dapat mengunggah jawaban untuk surat pada seksinya.")
 
     contents = await result_file.read()
     validation_error = validate_pdf_upload(result_file, contents)
@@ -933,6 +1086,14 @@ async def upload_result_document(
                 "submission": submission,
                 "status_labels": STATUS_LABELS,
                 "upload_error": validation_error,
+                "staff_function": get_staff_function(current_user),
+                "submission_progress": get_submission_progress_label(submission),
+                "can_route_document": can_route_document(current_user),
+                "can_verify_document": can_verify_document(current_user),
+                "can_upload_response_document": can_upload_response_document(current_user),
+                "can_download_original": True,
+                "can_download_result": bool(submission.result_stored_filename),
+                "internal_section_options": INTERNAL_SECTION_OPTIONS,
             },
             status_code=status.HTTP_400_BAD_REQUEST,
         )
@@ -1039,6 +1200,8 @@ async def upload_document(
         receipt_original_filename=f"receipt-{document_id}.pdf",
         receipt_stored_filename=receipt_stored_filename,
         status="DIAJUKAN",
+        assigned_section=bagian,
+        assigned_staff_role=STAFF_ROLE_OA,
     )
     db.add(submission)
     db.commit()

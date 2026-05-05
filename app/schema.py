@@ -77,9 +77,37 @@ def sync_schema() -> None:
                 connection.execute(
                     "ALTER TABLE document_submissions ADD COLUMN bagian VARCHAR(100) DEFAULT 'Perijinan Cukai'"
                 )
+            if "agenda_number" not in submission_columns:
+                connection.execute(
+                    "ALTER TABLE document_submissions ADD COLUMN agenda_number VARCHAR(100)"
+                )
+            if "assigned_section" not in submission_columns:
+                connection.execute(
+                    "ALTER TABLE document_submissions ADD COLUMN assigned_section VARCHAR(150)"
+                )
+            if "assigned_staff_role" not in submission_columns:
+                connection.execute(
+                    "ALTER TABLE document_submissions ADD COLUMN assigned_staff_role VARCHAR(50)"
+                )
             connection.execute(
                 "UPDATE document_submissions SET bagian = 'Perijinan Cukai' WHERE bagian IS NULL OR TRIM(bagian) = ''"
             )
+            current_submission_columns = _column_names(connection, "document_submissions")
+            if "assigned_section" in current_submission_columns:
+                connection.execute(
+                    "UPDATE document_submissions SET assigned_section = bagian WHERE assigned_section IS NULL OR TRIM(assigned_section) = ''"
+                )
+            if "assigned_staff_role" in current_submission_columns:
+                connection.execute(
+                    "UPDATE document_submissions SET assigned_staff_role = 'OA' WHERE assigned_staff_role IS NULL OR TRIM(assigned_staff_role) = ''"
+                )
+            if "status" in current_submission_columns:
+                connection.execute(
+                    "UPDATE document_submissions SET status = 'MENUNGGU_VERIFIKASI_PIC' WHERE status = 'DIVERIFIKASI'"
+                )
+                connection.execute(
+                    "UPDATE document_submissions SET status = 'TERDISTRIBUSI_KE_STAFF' WHERE status IN ('DITERIMA', 'DIPROSES')"
+                )
         connection.commit()
     finally:
         connection.close()
