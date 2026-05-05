@@ -20,14 +20,14 @@
                     {% if user_scope == 'service_user' %}{{ pending_count }}{% else %}{{ internal_count }}{% endif %}
                 </p>
                 <p class="mt-1 text-sm {% if user_scope == 'service_user' %}text-amber-800{% else %}text-sky-800{% endif %}">
-                    {% if user_scope == 'service_user' %}akun `PENDING` menunggu tindakan petugas{% else %}akun monitoring, admin, dan super admin{% endif %}
+                    {% if user_scope == 'service_user' %}akun `PENDING` menunggu tindakan petugas{% else %}akun admin dan super admin internal{% endif %}
                 </p>
             </div>
         </div>
 
         <div class="mt-6 flex flex-wrap gap-3">
             <a href="/admin/users?scope=service_user" class="inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold transition {% if user_scope == 'service_user' %}bg-emerald-600 text-white{% else %}border border-slate-300 text-slate-700 hover:bg-slate-50{% endif %}">
-                Edit Pengguna Jasa
+                {% if can_edit_user %}Edit Pengguna Jasa{% else %}Daftar Pengguna Jasa{% endif %}
             </a>
             {% if can_manage_internal_users %}
             <a href="/admin/users?scope=internal" class="inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold transition {% if user_scope == 'internal' %}bg-slate-900 text-white{% else %}border border-slate-300 text-slate-700 hover:bg-slate-50{% endif %}">
@@ -64,7 +64,7 @@
                     <tr class="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                         <th class="px-6 py-4">{% if user_scope == 'service_user' %}Perusahaan{% else %}Petugas{% endif %}</th>
                         <th class="px-6 py-4">{% if user_scope == 'service_user' %}PIC{% else %}Kontak{% endif %}</th>
-                        <th class="px-6 py-4">{% if user_scope == 'service_user' %}Identitas{% else %}Role / Seksi{% endif %}</th>
+                        <th class="px-6 py-4">{% if user_scope == 'service_user' %}Identitas{% else %}Fungsi Kerja / Seksi{% endif %}</th>
                         <th class="px-6 py-4">Status</th>
                         <th class="px-6 py-4">Terdaftar</th>
                         <th class="px-6 py-4">Aksi</th>
@@ -106,7 +106,7 @@
                         <td class="px-6 py-4">
                             <div class="flex flex-col gap-2 sm:flex-row">
                                 <a href="/admin/users/{{ user.id }}" class="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-                                    Detail
+                                    {% if user_scope == 'service_user' %}Detail{% else %}Edit Petugas{% endif %}
                                 </a>
                                 {% if user_scope == 'service_user' and can_approve_user and user.account_status != 'ACTIVE' %}
                                 <form method="post" action="/admin/users/{{ user.id }}/approve">

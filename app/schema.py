@@ -59,6 +59,10 @@ def sync_schema() -> None:
                 connection.execute(
                     "UPDATE users SET account_status = 'ACTIVE' WHERE account_status IS NULL OR TRIM(account_status) = ''"
                 )
+            if "role" in current_columns:
+                connection.execute(
+                    "UPDATE users SET role = 'admin' WHERE role = 'monitoring'"
+                )
 
             connection.execute(
                 "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_email ON users (email)"

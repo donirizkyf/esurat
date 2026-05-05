@@ -17,12 +17,12 @@ from app.auth import (
     ACCOUNT_PENDING,
     DEFAULT_INTERNAL_STAFF_ROLE,
     INTERNAL_SECTION_OPTIONS,
-    MONITORING_ROLES,
+    INTERNAL_ROLES,
     SERVICE_USER_ROLE,
     get_current_user,
     hash_password,
     is_admin_user,
-    is_monitoring_user,
+    is_internal_user,
     is_service_user,
     is_super_admin,
     get_session_secret,
@@ -146,7 +146,7 @@ def build_profile_context(
 
 def get_admin_user(request: Request, db: Session) -> models.User | None:
     current_user = get_current_user(request, db)
-    if not is_monitoring_user(current_user):
+    if not is_internal_user(current_user):
         return None
     return current_user
 
@@ -194,7 +194,7 @@ def build_admin_user_management_context(
     is_internal_scope = user_scope == "internal"
     query = db.query(models.User)
     if is_internal_scope:
-        query = query.filter(models.User.role.in_(tuple(MONITORING_ROLES)))
+        query = query.filter(models.User.role.in_(tuple(INTERNAL_ROLES)))
     else:
         query = query.filter(models.User.role == SERVICE_USER_ROLE)
     if selected_status:
@@ -218,6 +218,7 @@ def build_admin_user_management_context(
         "message": message,
         "can_approve_user": is_admin_user(current_user),
         "can_deactivate_user": is_super_admin(current_user),
+        "can_edit_user": is_super_admin(current_user),
         "can_manage_internal_users": is_super_admin(current_user),
         "pending_count": db.query(models.User)
         .filter(
@@ -226,7 +227,7 @@ def build_admin_user_management_context(
         )
         .count(),
         "internal_count": db.query(models.User)
-        .filter(models.User.role.in_(tuple(MONITORING_ROLES)))
+        .filter(models.User.role.in_(tuple(INTERNAL_ROLES)))
         .count(),
     }
 
@@ -281,7 +282,7 @@ def validate_pdf_upload(file: UploadFile, contents: bytes) -> str | None:
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, db: Session = Depends(get_db)):
     current_user = get_current_user(request, db)
-    if is_monitoring_user(current_user):
+    if is_internal_user(current_user):
         return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
     return templates.TemplateResponse(request, "index.html", build_home_context(request, db))
 
@@ -614,7 +615,7 @@ def get_managed_user_for_admin(
     query = db.query(models.User).filter(models.User.id == user_id)
     if allow_internal:
         query = query.filter(
-            (models.User.role == SERVICE_USER_ROLE) | models.User.role.in_(tuple(MONITORING_ROLES))
+            (models.User.role == SERVICE_USER_ROLE) | models.User.role.in_(tuple(INTERNAL_ROLES))
         )
     else:
         query = query.filter(models.User.role == SERVICE_USER_ROLE)

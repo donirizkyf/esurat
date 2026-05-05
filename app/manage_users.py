@@ -7,7 +7,7 @@ from app.models import User
 from app.schema import sync_schema
 
 
-INTERNAL_ROLES = {"monitoring", "admin", "super_admin"}
+INTERNAL_ROLES = {"admin", "super_admin"}
 ALL_ROLES = {"service_user", *INTERNAL_ROLES}
 ALL_STATUSES = {ACCOUNT_ACTIVE, ACCOUNT_PENDING, ACCOUNT_DEACTIVATED}
 

@@ -67,9 +67,9 @@
                         Dashboard Pengguna Jasa
                     </a>
                     {% endif %}
-                    {% if current_user.role in ['monitoring', 'admin', 'super_admin'] %}
+                    {% if current_user.role in ['admin', 'super_admin'] %}
                     <a href="/admin/dashboard" class="flex items-center rounded-2xl px-4 py-3 text-sm font-medium transition {% if request.url.path.startswith('/admin') and not request.url.path.startswith('/admin/users') %}bg-emerald-500 text-white shadow-lg shadow-emerald-900/30{% else %}text-slate-300 hover:bg-slate-900 hover:text-white{% endif %}">
-                        Dashboard Monitoring
+                        Dashboard Internal
                     </a>
                     {% endif %}
                     {% if current_user.role in ['admin', 'super_admin'] %}
@@ -89,7 +89,7 @@
                 </div>
                 {% else %}
                 <div class="rounded-2xl bg-slate-900/70 p-5 ring-1 ring-slate-800">
-                    <p class="text-sm leading-6 text-slate-300">Portal ini memisahkan akses Pengguna Jasa dan Petugas Monitoring agar proses registrasi, verifikasi, dan pengawasan dokumen lebih tertata.</p>
+                    <p class="text-sm leading-6 text-slate-300">Portal ini memisahkan akses Pengguna Jasa dan Petugas Internal agar proses registrasi, verifikasi, dan pengawasan dokumen lebih tertata.</p>
                     <div class="mt-4 grid gap-3">
                         <a href="/register/pengguna-jasa" class="inline-flex items-center justify-center rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-400">Registrasi Pengguna Jasa</a>
                         <a href="/login/pengguna-jasa" class="inline-flex items-center justify-center rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:bg-slate-900">Login Pengguna Jasa</a>

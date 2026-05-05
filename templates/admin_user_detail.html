@@ -22,7 +22,7 @@
                     {% if is_service_user_target %}
                         Kelola data perusahaan, PIC, status akun, dan reset password pengguna jasa dari satu halaman.
                     {% else %}
-                        Kelola data petugas, role, status akun, dan reset password tanpa mencampurkan data perusahaan.
+                        Kelola data petugas, jenis akun, fungsi kerja, status akun, dan reset password tanpa mencampurkan data perusahaan.
                     {% endif %}
                 </p>
             </div>
@@ -76,7 +76,7 @@
                         <dd class="mt-2 text-sm font-medium text-slate-900">{{ managed_user.role }}</dd>
                     </div>
                     <div class="rounded-2xl bg-slate-50 p-4">
-                        <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Role</dt>
+                        <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Fungsi Kerja</dt>
                         <dd class="mt-2 text-sm font-medium text-slate-900">
                             {% if managed_user.role == 'super_admin' %}
                                 {{ super_admin_staff_role_label }}
@@ -118,7 +118,7 @@
                     {% if is_service_user_target %}
                         Super admin dapat memperbarui data perusahaan, PIC, email, dan status akun.
                     {% else %}
-                        Super admin dapat memperbarui username, nama, jenis akun, role kerja, seksi, email, dan status akun petugas.
+                        Super admin dapat memperbarui username, nama, jenis akun, fungsi kerja, seksi, email, dan status akun petugas.
                     {% endif %}
                 </p>
 
@@ -152,7 +152,7 @@
                         </select>
                     </div>
                     <div>
-                        <label for="staff_role" class="text-sm font-semibold text-slate-700">Role</label>
+                        <label for="staff_role" class="text-sm font-semibold text-slate-700">Fungsi Kerja</label>
                         <select id="staff_role" name="staff_role" class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-100">
                             {% if managed_user.role == 'super_admin' %}
                             <option value="{{ super_admin_staff_role_label }}" selected>{{ super_admin_staff_role_label }}</option>
@@ -162,8 +162,8 @@
                             {% endfor %}
                             {% endif %}
                         </select>
-                        <p class="mt-2 text-xs text-slate-500">
-                            Jika jenis akun `super_admin`, role otomatis mencakup semua akses. Jika `admin`, pilih satu role kerja saja.
+                        <p class="mt-2 text-xs leading-5 text-slate-500">
+                            Jenis akun hanya `admin` atau `super_admin`. Fungsi kerja `OA` untuk administrasi awal, `Monitoring` untuk pemantauan antrean dan screening awal, `PIC` untuk penanggung jawab seksi atau tim, dan `Staff` untuk pelaksana operasional harian.
                         </p>
                     </div>
                     <div class="sm:col-span-2">
@@ -221,7 +221,7 @@
                     {% endif %}
                     {% if not is_service_user_target %}
                     <div class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                        Role dan status akun petugas bisa diatur dari form edit di samping.
+                        Jenis akun, fungsi kerja, dan status akun petugas bisa diatur dari form edit di samping.
                     </div>
                     {% endif %}
                 </div>

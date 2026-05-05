@@ -1,25 +1,34 @@
 # Sistem Pengajuan Dokumen
 
-Aplikasi web berbasis FastAPI untuk pengajuan dokumen oleh `service_user` dan pengelolaan dokumen oleh petugas internal dengan role `monitoring`, `admin`, dan `super_admin`.
+Aplikasi web berbasis FastAPI untuk pengajuan dokumen oleh `service_user` dan pengelolaan dokumen oleh petugas internal dengan jenis akun `admin` dan `super_admin`.
 
 ## Fitur Inti
 
 - Registrasi dan login Pengguna Jasa
 - Login Petugas internal
 - Dashboard pengguna untuk upload dan pantau dokumen
-- Dashboard admin/monitoring untuk verifikasi dokumen
+- Dashboard petugas internal untuk verifikasi dokumen
 - Upload file hasil dokumen oleh petugas
 - Pembuatan tanda terima PDF otomatis dengan signature token dari server
 - Audit log aktivitas utama
 
-## Perbedaan Role Internal
+## Perbedaan Jenis Akun Internal
 
-- `monitoring`
-  Bertugas meninjau antrean dokumen dan melakukan screening awal. Role ini bisa melihat dashboard internal, membuka detail dokumen, dan menolak dokumen dengan catatan, tetapi tidak bisa menyetujui dokumen, menandai proses, mengunggah hasil akhir, atau membuka halaman kelola pendaftar.
 - `admin`
-  Bertugas menjalankan operasi layanan. Role ini bisa melakukan seluruh tugas `monitoring`, menyetujui dokumen, menandai dokumen sedang diproses, mengunggah hasil akhir, dan mengaktifkan akun `service_user` dari halaman `Kelola Pendaftar`.
+  Bertugas menjalankan operasi layanan harian. Akun ini dapat memantau dokumen, membuka detail dokumen, memberi catatan penolakan, menyetujui dokumen, menandai proses, mengunggah hasil akhir, dan mengaktifkan akun `service_user`.
 - `super_admin`
-  Bertugas mengendalikan akun dan hak akses. Role ini memiliki seluruh hak `admin`, serta dapat menonaktifkan akun `service_user`. Role ini disiapkan sebagai level tertinggi untuk pengelolaan sistem dan akun internal.
+  Bertugas mengendalikan akun dan hak akses. Akun ini memiliki seluruh hak `admin`, serta dapat mengedit akun petugas, mengedit pengguna jasa, reset password pengguna, dan menonaktifkan akun `service_user`.
+
+## Fungsi Kerja Petugas
+
+- `OA`
+  Operator administrasi untuk input data, cek kelengkapan, dan urusan administrasi awal.
+- `Monitoring`
+  Petugas pemantauan antrean, status proses, dan screening awal dokumen.
+- `PIC`
+  Penanggung jawab utama untuk seksi atau tim tertentu.
+- `Staff`
+  Pelaksana operasional harian yang membantu proses kerja umum.
 
 ## Teknologi
 
@@ -84,7 +93,7 @@ Environment variable yang disarankan di Railway:
 Contoh perintah untuk membuat akun petugas:
 
 ```powershell
-python -m app.manage_users create --username petugas1 --password Password123 --role monitoring --status ACTIVE
+python -m app.manage_users create --username admin1 --password Password123 --role admin --status ACTIVE
 ```
 
 Lihat panduan lengkap di [README_KELOLA_AKUN_PETUGAS.md](README_KELOLA_AKUN_PETUGAS.md) dan alur demo di [MANUAL_DEMO.md](MANUAL_DEMO.md).

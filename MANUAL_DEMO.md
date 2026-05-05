@@ -2,7 +2,7 @@
 
 ## 1. Tujuan
 
-Dokumen ini dipakai untuk mendemokan aplikasi yang sudah berjalan dengan backend FastAPI, database SQLite, autentikasi berbasis session, upload PDF, dashboard pengguna, dan dashboard monitoring.
+Dokumen ini dipakai untuk mendemokan aplikasi yang sudah berjalan dengan backend FastAPI, database SQLite, autentikasi berbasis session, upload PDF, dashboard pengguna, dan dashboard internal.
 
 Manual ini cocok dipakai untuk:
 
@@ -29,7 +29,6 @@ Sistem saat ini memiliki 2 kelompok besar pengguna:
 
 Terdiri dari:
 
-- `monitoring`
 - `admin`
 - `super_admin`
 
@@ -38,7 +37,7 @@ Petugas internal:
 - sementara bisa didaftarkan dari form web publik dengan memilih role petugas dan memasukkan kode registrasi internal
 - akunnya dibuat langsung di database atau lewat CLI manager
 - login dari halaman `Login Petugas`
-- setelah login masuk ke dashboard monitoring/admin
+- setelah login masuk ke dashboard internal
 
 ## 3. Fitur yang Bisa Didemo
 
@@ -54,7 +53,7 @@ Fitur aplikasi yang saat ini benar-benar tersedia:
 8. Penyimpanan metadata dokumen ke database.
 9. Pembuatan tanda terima PDF otomatis.
 10. Detail dokumen pengguna.
-11. Dashboard monitoring/admin.
+11. Dashboard internal.
 12. Filter status dokumen.
 13. Approve, reject, dan mark as processed.
 14. Upload file hasil oleh admin.
@@ -114,7 +113,7 @@ Contoh akun petugas yang aktif:
 
 Narasi:
 
-"Ini adalah sistem pengajuan dokumen berbasis web yang memisahkan akses antara Pengguna Jasa dan Petugas Monitoring. Pengguna Jasa dapat mendaftar dan mengajukan dokumen, sedangkan petugas memverifikasi dan menyelesaikan proses dokumen dari dashboard internal."
+"Ini adalah sistem pengajuan dokumen berbasis web yang memisahkan akses antara Pengguna Jasa dan Petugas Internal. Pengguna Jasa dapat mendaftar dan mengajukan dokumen, sedangkan petugas memverifikasi dan menyelesaikan proses dokumen dari dashboard internal."
 
 Yang dicek:
 
@@ -236,18 +235,18 @@ Langkah:
 
 Yang dicek:
 
-- hanya role `monitoring`, `admin`, atau `super_admin` yang bisa masuk
-- redirect ke dashboard monitoring/admin berjalan
+- hanya role `admin` atau `super_admin` yang bisa masuk
+- redirect ke dashboard internal berjalan
 
 Narasi:
 
 "Akun petugas dikelola langsung dari database atau CLI manager, bukan dari halaman publik."
 
-### I. Demo Dashboard Monitoring/Admin
+### I. Demo Dashboard Internal
 
 Langkah:
 
-1. Tunjukkan dashboard monitoring.
+1. Tunjukkan dashboard internal.
 2. Tunjukkan tabel semua dokumen.
 3. Coba filter berdasarkan status.
 
@@ -315,7 +314,7 @@ Gunakan checklist ini sebelum demo:
 - upload PDF berhasil
 - receipt PDF dibuat
 - dashboard pengguna menampilkan data yang benar
-- dashboard monitoring menampilkan semua data
+- dashboard internal menampilkan semua data
 - filter status admin bekerja
 - approve / reject / process berjalan
 - upload hasil admin berjalan
@@ -363,4 +362,4 @@ Namun untuk demo aplikasi inti, alur utama sudah berjalan end-to-end.
 
 Contoh penutup:
 
-"Sistem ini sudah mendukung alur nyata dari pendaftaran Pengguna Jasa, pengajuan dokumen, monitoring internal, verifikasi petugas, sampai upload hasil akhir dan download oleh pengguna. Tahap berikutnya bisa difokuskan ke manajemen user internal, penguatan keamanan, dan deployment ke server produksi."
+"Sistem ini sudah mendukung alur nyata dari pendaftaran Pengguna Jasa, pengajuan dokumen, pemantauan internal, verifikasi petugas, sampai upload hasil akhir dan download oleh pengguna. Tahap berikutnya bisa difokuskan ke manajemen user internal, penguatan keamanan, dan deployment ke server produksi."

@@ -15,15 +15,13 @@ from app.models import User
 router = APIRouter(tags=["authentication"])
 
 SERVICE_USER_ROLE = "service_user"
-MONITORING_ROLES = {"monitoring", "admin", "super_admin"}
-ADMIN_ROLES = {"admin", "super_admin"}
+INTERNAL_ROLES = {"admin", "super_admin"}
 SELF_REGISTRATION_ROLES = {
     SERVICE_USER_ROLE,
-    "monitoring",
     "admin",
     "super_admin",
 }
-INTERNAL_REGISTRATION_ROLES = MONITORING_ROLES
+INTERNAL_REGISTRATION_ROLES = INTERNAL_ROLES
 INTERNAL_SIGNUP_ROLES = {"admin", "super_admin"}
 DEFAULT_INTERNAL_STAFF_ROLE = "Monitoring"
 INTERNAL_SECTION_OPTIONS = (
@@ -64,12 +62,12 @@ def is_service_user(user: User | None) -> bool:
     return bool(user and user.role == SERVICE_USER_ROLE)
 
 
-def is_monitoring_user(user: User | None) -> bool:
-    return bool(user and user.role in MONITORING_ROLES)
+def is_internal_user(user: User | None) -> bool:
+    return bool(user and user.role in INTERNAL_ROLES)
 
 
 def is_admin_user(user: User | None) -> bool:
-    return bool(user and user.role in ADMIN_ROLES)
+    return bool(user and user.role in INTERNAL_ROLES)
 
 
 def is_super_admin(user: User | None) -> bool:
@@ -93,7 +91,6 @@ def get_internal_registration_code(role: str) -> str:
 def get_registration_label(role: str) -> str:
     labels = {
         SERVICE_USER_ROLE: "Pengguna Jasa",
-        "monitoring": "Petugas Monitoring",
         "admin": "Admin",
         "super_admin": "Super Admin",
     }
@@ -101,7 +98,7 @@ def get_registration_label(role: str) -> str:
 
 
 def redirect_after_login(user: User) -> str:
-    if is_monitoring_user(user):
+    if is_internal_user(user):
         return "/admin/dashboard"
     return "/dashboard"
 
@@ -421,12 +418,12 @@ def service_login(
 
 
 @router.get("/login/petugas")
-def monitoring_login_page(request: Request, templates: Jinja2Templates = Depends(get_templates)):
-    return render_login(request, templates, login_type="monitoring")
+def internal_login_page(request: Request, templates: Jinja2Templates = Depends(get_templates)):
+    return render_login(request, templates, login_type="internal")
 
 
 @router.post("/login/petugas")
-def monitoring_login(
+def internal_login(
     request: Request,
     identifier: str = Form(...),
     password: str = Form(...),
@@ -439,7 +436,7 @@ def monitoring_login(
     user = (
         db.query(User)
         .filter(
-            User.role.in_(MONITORING_ROLES),
+            User.role.in_(INTERNAL_ROLES),
             or_(func.lower(User.username) == normalized_identifier, User.email == normalized_identifier),
         )
         .first()
@@ -449,7 +446,7 @@ def monitoring_login(
         return render_login(
             request,
             templates,
-            login_type="monitoring",
+            login_type="internal",
             error="Akun petugas atau kata sandi tidak valid.",
             form_data=form_data,
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -459,7 +456,7 @@ def monitoring_login(
         return render_login(
             request,
             templates,
-            login_type="monitoring",
+            login_type="internal",
             error="Akun petugas belum aktif.",
             form_data=form_data,
             status_code=status.HTTP_403_FORBIDDEN,
