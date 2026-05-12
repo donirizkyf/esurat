@@ -59,7 +59,7 @@ VALID_ACCOUNT_STATUSES = tuple(ACCOUNT_STATUS_LABELS.keys())
 USER_SCOPE_OPTIONS = ("service_user", "internal")
 INTERNAL_ACCOUNT_TYPE_OPTIONS = ("admin", "super_admin")
 INTERNAL_STAFF_ROLE_OPTIONS = ("OA", "Monitoring", "PIC", "Staff", "Staff KK")
-SUPER_ADMIN_STAFF_ROLE_LABEL = "Semua"
+SUPER_ADMIN_STAFF_ROLE_LABEL = "Super Admin"
 STAFF_ROLE_OA = "OA"
 STAFF_ROLE_MONITORING = "Monitoring"
 STAFF_ROLE_PIC = "PIC"
@@ -173,6 +173,18 @@ def get_staff_function(user: models.User | None) -> str:
     return normalized
 
 
+def get_current_submission_role(submission: models.DocumentSubmission) -> str:
+    if submission.status == "PENOMORAN_AGENDA":
+        return STAFF_ROLE_OA
+    if submission.status == "VERIFIKASI_PETUGAS":
+        return STAFF_ROLE_PIC
+    if submission.status in {"PENELITIAN_DOKUMEN", "SELESAI"}:
+        return STAFF_ROLE_STAFF
+    if submission.status == "PENOLAKAN":
+        return submission.assigned_staff_role or STAFF_ROLE_OA
+    return submission.assigned_staff_role or STAFF_ROLE_OA
+
+
 def can_route_document(user: models.User | None) -> bool:
     return is_super_admin(user) or get_staff_function(user) == STAFF_ROLE_OA
 
@@ -202,6 +214,38 @@ def can_edit_submission_metadata(user: models.User | None) -> bool:
     )
 
 
+def can_show_route_panel(user: models.User | None, submission: models.DocumentSubmission) -> bool:
+    return submission.status == "PENOMORAN_AGENDA" and can_route_document(user)
+
+
+def can_show_verify_panel(user: models.User | None, submission: models.DocumentSubmission) -> bool:
+    return (
+        submission.status == "VERIFIKASI_PETUGAS"
+        and can_verify_document(user)
+        and can_operate_on_section(user, submission.assigned_section)
+    )
+
+
+def can_show_complete_panel(user: models.User | None, submission: models.DocumentSubmission) -> bool:
+    return (
+        submission.status == "PENELITIAN_DOKUMEN"
+        and can_upload_response_document(user)
+        and can_operate_on_section(user, submission.assigned_section)
+    )
+
+
+def can_show_metadata_panel(user: models.User | None, submission: models.DocumentSubmission) -> bool:
+    if not can_edit_submission_metadata(user):
+        return False
+    if submission.status == "PENOMORAN_AGENDA":
+        return can_route_document(user)
+    if submission.status == "VERIFIKASI_PETUGAS":
+        return can_verify_document(user) and can_operate_on_section(user, submission.assigned_section)
+    if submission.status == "PENELITIAN_DOKUMEN":
+        return can_upload_response_document(user) and can_operate_on_section(user, submission.assigned_section)
+    return False
+
+
 def normalize_urgency_level(raw_value: str | None) -> str:
     normalized = (raw_value or "BIASA").strip().upper()
     if normalized not in URGENCY_OPTIONS:
@@ -229,20 +273,24 @@ def build_section_code(section_name: str) -> str:
 
 
 def generate_agenda_number(db: Session, section_name: str) -> str:
-    code = build_section_code(section_name)
-    today_stamp = datetime.now().strftime("%Y%m%d")
-    prefix = f"AGD/{code}/{today_stamp}/"
+    now = datetime.now()
+    year_start = datetime(now.year, 1, 1)
+    next_year_start = datetime(now.year + 1, 1, 1)
     existing_count = (
         db.query(models.DocumentSubmission)
-        .filter(models.DocumentSubmission.agenda_number.like(f"{prefix}%"))
+        .filter(
+            models.DocumentSubmission.agenda_number.isnot(None),
+            models.DocumentSubmission.created_at >= year_start,
+            models.DocumentSubmission.created_at < next_year_start,
+        )
         .count()
     )
-    return f"{prefix}{existing_count + 1:04d}"
+    return f"{existing_count + 1:06d}"
 
 
 def get_submission_progress_label(submission: models.DocumentSubmission) -> str:
     if submission.status == "PENOMORAN_AGENDA":
-        return "Menunggu tindakan OA untuk distribusi ke PIC atau Staff"
+        return "Menunggu tindakan OA untuk pendistribusian ke seksi tujuan"
     if submission.status == "VERIFIKASI_PETUGAS":
         return f"Menunggu verifikasi PIC seksi {submission.assigned_section or '-'}"
     if submission.status == "PENELITIAN_DOKUMEN":
@@ -285,7 +333,7 @@ def build_admin_dashboard_context(
         "status_labels": STATUS_LABELS,
         "valid_statuses": VALID_STATUSES,
         "selected_status": selected_status,
-        "staff_function": get_staff_function(current_user),
+        "staff_role": get_staff_function(current_user),
         "can_route_document": can_route_document(current_user),
         "can_verify_document": can_verify_document(current_user),
         "can_upload_response_document": can_upload_response_document(current_user),
@@ -744,19 +792,14 @@ def update_document_metadata(
     current_user = get_admin_user(request, db)
     if not current_user:
         return RedirectResponse(url="/login/petugas", status_code=status.HTTP_303_SEE_OTHER)
-    if not can_edit_submission_metadata(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Petugas ini tidak memiliki hak untuk mengubah metadata surat.",
-        )
 
     submission = get_internal_submission(db, document_id)
     if not submission:
         return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
-    if not can_operate_on_section(current_user, submission.assigned_section):
+    if not can_show_metadata_panel(current_user, submission):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Petugas hanya dapat mengubah metadata surat pada seksinya.",
+            detail="Metadata surat hanya dapat diubah oleh role yang aktif pada tahap surat ini.",
         )
 
     cleaned_letter_number = letter_number.strip()
@@ -1035,13 +1078,14 @@ def build_admin_document_detail_context(
         "submission": submission,
         "status_labels": STATUS_LABELS,
         "upload_error": upload_error,
-        "staff_function": get_staff_function(current_user),
+        "staff_role": get_staff_function(current_user),
+        "current_submission_role": get_current_submission_role(submission),
         "submission_progress": get_submission_progress_label(submission),
-        "can_route_document": can_route_document(current_user),
-        "can_verify_document": can_verify_document(current_user),
-        "can_upload_response_document": can_upload_response_document(current_user),
-        "can_complete_document": can_complete_document(current_user),
-        "can_edit_submission_metadata": can_edit_submission_metadata(current_user),
+        "can_route_document": can_show_route_panel(current_user, submission),
+        "can_verify_document": can_show_verify_panel(current_user, submission),
+        "can_upload_response_document": can_show_complete_panel(current_user, submission),
+        "can_complete_document": can_show_complete_panel(current_user, submission),
+        "can_edit_submission_metadata": can_show_metadata_panel(current_user, submission),
         "can_download_original": True,
         "can_download_result": bool(submission.result_stored_filename),
         "internal_section_options": INTERNAL_SECTION_OPTIONS,
@@ -1053,7 +1097,6 @@ def build_admin_document_detail_context(
 def distribute_document(
     document_id: str,
     request: Request,
-    target_staff_role: str = Form(...),
     section_name: str = Form(...),
     db: Session = Depends(get_db),
 ):
@@ -1067,24 +1110,17 @@ def distribute_document(
     if not submission:
         return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
 
-    cleaned_target = target_staff_role.strip()
     cleaned_section = section_name.strip()
-    if cleaned_target not in {STAFF_ROLE_PIC, STAFF_ROLE_STAFF}:
-        return RedirectResponse(url=f"/admin/documents/{document_id}", status_code=status.HTTP_303_SEE_OTHER)
     if cleaned_section not in INTERNAL_SECTION_OPTIONS:
         return RedirectResponse(url=f"/admin/documents/{document_id}", status_code=status.HTTP_303_SEE_OTHER)
     if submission.status in {"PENOLAKAN", "SELESAI"}:
         return RedirectResponse(url=f"/admin/documents/{document_id}", status_code=status.HTTP_303_SEE_OTHER)
 
     submission.assigned_section = cleaned_section
-    submission.assigned_staff_role = cleaned_target
+    submission.assigned_staff_role = STAFF_ROLE_PIC
     submission.admin_notes = None
-    if cleaned_target == STAFF_ROLE_PIC:
-        submission.status = "VERIFIKASI_PETUGAS"
-        submission.agenda_number = None
-    else:
-        submission.status = "PENELITIAN_DOKUMEN"
-        submission.agenda_number = generate_agenda_number(db, cleaned_section)
+    submission.status = "VERIFIKASI_PETUGAS"
+    submission.agenda_number = None
 
     db.commit()
     log_audit_event(db, request, current_user.id, "verify", submission.document_id)

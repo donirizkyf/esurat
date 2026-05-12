@@ -11,10 +11,10 @@
                 <p class="text-sm font-medium text-emerald-700">Menu Petugas</p>
                 <h1 class="mt-2 text-3xl font-semibold text-slate-900">Monitoring Surat</h1>
                 <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-                    Pantau progres surat masuk dari pengguna jasa, cek distribusi ke seksi, verifikasi PIC, nomor agenda otomatis, sampai upload surat jawaban oleh staff.
+                    Pantau progres surat masuk dari pengguna jasa, cek pendistribusian ke seksi, verifikasi PIC, nomor agenda otomatis, sampai upload surat jawaban oleh staff.
                 </p>
                 <div class="mt-4 inline-flex rounded-2xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
-                    Fungsi Kerja Anda: {{ staff_function }}
+                    Role Anda: {{ staff_role }}
                 </div>
             </div>
             <form class="grid gap-3 sm:grid-cols-[minmax(220px,1fr)_auto]" method="get" action="/admin/dashboard">
@@ -57,7 +57,7 @@
                     <tr class="text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                         <th class="px-6 py-4">Surat Masuk</th>
                         <th class="px-6 py-4">Pemohon</th>
-                        <th class="px-6 py-4">Seksi / Fungsi</th>
+                        <th class="px-6 py-4">Seksi / Role</th>
                         <th class="px-6 py-4">Agenda</th>
                         <th class="px-6 py-4">Progres</th>
                         <th class="px-6 py-4">Aksi</th>
