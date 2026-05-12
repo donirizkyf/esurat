@@ -39,6 +39,7 @@
                         <td class="px-6 py-4">
                             <div class="font-semibold text-slate-900">{{ submission.subject }}</div>
                             <div class="mt-1 text-xs font-medium text-slate-600">Nomor Surat: {{ submission.letter_number }}</div>
+                            <div class="mt-1 text-xs font-medium text-slate-600">Nomor Agenda: {{ submission.agenda_number or '-' }}</div>
                             <div class="mt-1 text-xs text-slate-500">{{ submission.document_id }}</div>
                             <div class="mt-2">
                                 <span class="{{ urgency_badge_class(submission.urgency_level) }}">{{ submission.urgency_level }}</span>
