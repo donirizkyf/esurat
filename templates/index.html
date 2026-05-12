@@ -45,7 +45,7 @@
 
             <div class="space-y-2">
                 <label for="document_date" class="text-sm font-semibold text-slate-700">Tanggal Surat</label>
-                <input id="document_date" name="document_date" type="date" value="{{ form_data.document_date }}" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100">
+                <input id="document_date" name="document_date" type="date" value="{{ form_data.document_date }}" max="{{ today_iso }}" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100">
             </div>
 
             <div class="space-y-2">

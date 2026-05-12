@@ -1,6 +1,6 @@
 from pathlib import Path
 from uuid import uuid4
-from datetime import datetime
+from datetime import date, datetime
 
 import uvicorn
 from fastapi import FastAPI, Request, Depends, Form, File, UploadFile, status, HTTPException
@@ -102,6 +102,7 @@ def build_home_context(
         "current_user": current_user,
         "error": error,
         "urgency_options": URGENCY_OPTIONS,
+        "today_iso": date.today().isoformat(),
         "form_data": form_data or {
             "letter_number": "",
             "subject": "",
@@ -1311,6 +1312,14 @@ async def upload_document(
             request,
             db,
             error="Silakan isi tanggal dokumen yang valid.",
+            form_data=form_data,
+        )
+        return templates.TemplateResponse(request, "index.html", context, status_code=status.HTTP_400_BAD_REQUEST)
+    if parsed_date > date.today():
+        context = build_home_context(
+            request,
+            db,
+            error="Tanggal surat tidak boleh melebihi tanggal hari ini.",
             form_data=form_data,
         )
         return templates.TemplateResponse(request, "index.html", context, status_code=status.HTTP_400_BAD_REQUEST)

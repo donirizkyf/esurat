@@ -1,4 +1,5 @@
 import os
+from urllib.parse import quote_plus
 
 import bcrypt
 from fastapi import APIRouter, Depends, Form, Request, status
@@ -346,19 +347,15 @@ def register_user(
     db.commit()
     db.refresh(user)
 
-    if account_status == ACCOUNT_ACTIVE:
-        request.session.clear()
-        request.session["user_id"] = user.id
-        request.session["role"] = user.role
-        request.session["username"] = user.username or user.pic_name or user.company_name or user.email
-        log_audit_event(db, request, user.id, "login")
-        return RedirectResponse(url=redirect_after_login(user), status_code=status.HTTP_303_SEE_OTHER)
-
-    return render_register(
-        request,
-        templates,
-        register_type=register_type,
-        success=f"Pendaftaran {get_registration_label(role)} berhasil. Akun Anda menunggu verifikasi petugas sebelum bisa digunakan.",
+    success_message = (
+        f"Pendaftaran {get_registration_label(role)} berhasil. Silakan login untuk melanjutkan."
+        if account_status == ACCOUNT_ACTIVE
+        else f"Pendaftaran {get_registration_label(role)} berhasil. Akun Anda menunggu verifikasi petugas sebelum bisa digunakan."
+    )
+    login_target = "/login/petugas" if role in INTERNAL_REGISTRATION_ROLES else "/login/pengguna-jasa"
+    return RedirectResponse(
+        url=f"{login_target}?success={quote_plus(success_message)}",
+        status_code=status.HTTP_303_SEE_OTHER,
     )
 
 
@@ -368,8 +365,17 @@ def login_redirect():
 
 
 @router.get("/login/pengguna-jasa")
-def service_login_page(request: Request, templates: Jinja2Templates = Depends(get_templates)):
-    return render_login(request, templates, login_type="service_user")
+def service_login_page(
+    request: Request,
+    success: str = "",
+    templates: Jinja2Templates = Depends(get_templates),
+):
+    return render_login(
+        request,
+        templates,
+        login_type="service_user",
+        success=success.strip() or None,
+    )
 
 
 @router.post("/login/pengguna-jasa")
@@ -418,8 +424,17 @@ def service_login(
 
 
 @router.get("/login/petugas")
-def internal_login_page(request: Request, templates: Jinja2Templates = Depends(get_templates)):
-    return render_login(request, templates, login_type="internal")
+def internal_login_page(
+    request: Request,
+    success: str = "",
+    templates: Jinja2Templates = Depends(get_templates),
+):
+    return render_login(
+        request,
+        templates,
+        login_type="internal",
+        success=success.strip() or None,
+    )
 
 
 @router.post("/login/petugas")
