@@ -11,6 +11,9 @@
                 <p class="text-sm font-medium text-emerald-700">Monitoring Surat</p>
                 <h1 class="mt-2 text-3xl font-semibold text-slate-900">{{ submission.subject }}</h1>
                 <p class="mt-2 text-sm text-slate-500">ID Dokumen: <span class="font-semibold text-slate-700">{{ submission.document_id }}</span></p>
+                <div class="mt-4">
+                    <span class="{{ urgency_badge_class(submission.urgency_level) }}">{{ submission.urgency_level }}</span>
+                </div>
                 <div class="mt-4 inline-flex rounded-2xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
                     Fungsi Kerja Anda: {{ staff_function }}
                 </div>
@@ -29,7 +32,7 @@
         </div>
         <div class="rounded-[24px] bg-white p-5 shadow-panel ring-1 ring-slate-200">
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Seksi Tujuan</p>
-            <p class="mt-3 text-base font-semibold text-slate-900">{{ submission.assigned_section or submission.bagian }}</p>
+            <p class="mt-3 text-base font-semibold text-slate-900">{{ submission.assigned_section or '-' }}</p>
         </div>
         <div class="rounded-[24px] bg-white p-5 shadow-panel ring-1 ring-slate-200">
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Fungsi Saat Ini</p>
@@ -56,16 +59,57 @@
                 <h2 class="text-lg font-semibold text-slate-900">Isi Surat</h2>
                 <dl class="mt-5 grid gap-4 sm:grid-cols-2">
                     <div class="rounded-2xl bg-slate-50 p-4">
+                        <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Nomor Surat</dt>
+                        <dd class="mt-2 text-sm font-medium text-slate-900">{{ submission.letter_number }}</dd>
+                    </div>
+                    <div class="rounded-2xl bg-slate-50 p-4">
                         <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Tanggal Surat</dt>
                         <dd class="mt-2 text-sm font-medium text-slate-900">{{ submission.document_date.strftime("%Y-%m-%d") }}</dd>
                     </div>
                     <div class="rounded-2xl bg-slate-50 p-4">
-                        <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Bagian Saat Diajukan</dt>
-                        <dd class="mt-2 text-sm font-medium text-slate-900">{{ submission.bagian }}</dd>
+                        <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Perihal</dt>
+                        <dd class="mt-2 text-sm font-medium text-slate-900">{{ submission.subject }}</dd>
+                    </div>
+                    <div class="rounded-2xl bg-slate-50 p-4">
+                        <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Sifat Surat</dt>
+                        <dd class="mt-2">
+                            <span class="{{ urgency_badge_class(submission.urgency_level) }}">{{ submission.urgency_level }}</span>
+                        </dd>
                     </div>
                 </dl>
-                <p class="mt-5 whitespace-pre-line text-sm leading-7 text-slate-600">{{ submission.description }}</p>
+                {% if submission.urgency_level == 'SEGERA' %}
+                <div class="mt-5 rounded-2xl bg-rose-50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-rose-500">Alasan Urgensi</p>
+                    <p class="mt-2 whitespace-pre-line text-sm leading-7 text-rose-900">{{ submission.urgency_reason }}</p>
+                </div>
+                {% endif %}
             </div>
+
+            {% if can_edit_submission_metadata %}
+            <div class="rounded-[28px] bg-white p-6 shadow-panel ring-1 ring-slate-200 sm:p-8">
+                <h2 class="text-lg font-semibold text-slate-900">Edit Metadata Surat</h2>
+                <p class="mt-2 text-sm text-slate-500">OA, PIC, Staff, dan Staff KK dapat memperbarui nomor surat, tanggal surat, dan perihal sesuai dokumen terbaru yang sedang diproses.</p>
+                <form class="mt-5 grid gap-4 sm:grid-cols-2" method="post" action="/admin/documents/{{ submission.document_id }}/metadata">
+                    <div class="space-y-2">
+                        <label for="letter_number" class="text-sm font-semibold text-slate-700">Nomor Surat</label>
+                        <input id="letter_number" name="letter_number" type="text" value="{{ submission.letter_number }}" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                    </div>
+                    <div class="space-y-2">
+                        <label for="document_date" class="text-sm font-semibold text-slate-700">Tanggal Surat</label>
+                        <input id="document_date" name="document_date" type="date" value="{{ submission.document_date.strftime('%Y-%m-%d') }}" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                    </div>
+                    <div class="space-y-2 sm:col-span-2">
+                        <label for="subject" class="text-sm font-semibold text-slate-700">Perihal</label>
+                        <input id="subject" name="subject" type="text" value="{{ submission.subject }}" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <button type="submit" class="inline-flex w-full items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
+                            Simpan Metadata Surat
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
 
             {% if submission.admin_notes %}
             <div class="rounded-[28px] border border-amber-200 bg-amber-50 p-6 shadow-panel">
@@ -118,7 +162,7 @@
                         <label for="section_name" class="text-sm font-semibold text-slate-700">Seksi Tujuan</label>
                         <select id="section_name" name="section_name" class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
                             {% for section_option in internal_section_options %}
-                            <option value="{{ section_option }}" {% if submission.assigned_section == section_option or (not submission.assigned_section and submission.bagian == section_option) %}selected{% endif %}>{{ section_option }}</option>
+                            <option value="{{ section_option }}" {% if submission.assigned_section == section_option %}selected{% endif %}>{{ section_option }}</option>
                             {% endfor %}
                         </select>
                     </div>

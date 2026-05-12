@@ -42,12 +42,6 @@ STATIC_DIR = BASE_DIR / "static"
 UPLOADS_DIR = BASE_DIR / "uploads"
 OUTPUTS_DIR = BASE_DIR / "outputs"
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024
-VALID_BAGIAN_OPTIONS = (
-    "Perijinan Cukai",
-    "Perijinan Pabean",
-    "Pelayanan BC25/Ekspor",
-)
-DEFAULT_BAGIAN = VALID_BAGIAN_OPTIONS[0]
 STATUS_LABELS = {
     "PENOMORAN_AGENDA": "status-submitted",
     "VERIFIKASI_PETUGAS": "status-verified",
@@ -71,6 +65,7 @@ STAFF_ROLE_MONITORING = "Monitoring"
 STAFF_ROLE_PIC = "PIC"
 STAFF_ROLE_STAFF = "Staff"
 STAFF_ROLE_STAFF_KK = "Staff KK"
+URGENCY_OPTIONS = ("BIASA", "SEGERA")
 
 for directory in (STATIC_DIR, UPLOADS_DIR, OUTPUTS_DIR):
     directory.mkdir(parents=True, exist_ok=True)
@@ -106,12 +101,13 @@ def build_home_context(
         "app_name": "Sistem Pengajuan Dokumen",
         "current_user": current_user,
         "error": error,
-        "bagian_options": VALID_BAGIAN_OPTIONS,
+        "urgency_options": URGENCY_OPTIONS,
         "form_data": form_data or {
-            "bagian": DEFAULT_BAGIAN,
+            "letter_number": "",
             "subject": "",
             "document_date": "",
-            "description": "",
+            "urgency_level": "BIASA",
+            "urgency_reason": "",
         },
     }
 
@@ -129,6 +125,7 @@ def build_dashboard_context(request: Request, current_user: models.User, db: Ses
         "current_user": current_user,
         "submissions": submissions,
         "status_labels": STATUS_LABELS,
+        "urgency_badge_class": urgency_badge_class,
     }
 
 
@@ -196,6 +193,30 @@ def can_monitor_document(user: models.User | None) -> bool:
     return bool(user and is_admin_user(user))
 
 
+def can_edit_submission_metadata(user: models.User | None) -> bool:
+    return (
+        is_super_admin(user)
+        or can_route_document(user)
+        or can_verify_document(user)
+        or can_upload_response_document(user)
+    )
+
+
+def normalize_urgency_level(raw_value: str | None) -> str:
+    normalized = (raw_value or "BIASA").strip().upper()
+    if normalized not in URGENCY_OPTIONS:
+        return "BIASA"
+    return normalized
+
+
+def urgency_badge_class(urgency_level: str) -> str:
+    return (
+        "inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-rose-700"
+        if urgency_level == "SEGERA"
+        else "inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-700"
+    )
+
+
 def can_access_internal_scope(user: models.User | None) -> bool:
     return is_super_admin(user)
 
@@ -223,9 +244,9 @@ def get_submission_progress_label(submission: models.DocumentSubmission) -> str:
     if submission.status == "PENOMORAN_AGENDA":
         return "Menunggu tindakan OA untuk distribusi ke PIC atau Staff"
     if submission.status == "VERIFIKASI_PETUGAS":
-        return f"Menunggu verifikasi PIC seksi {submission.assigned_section or submission.bagian}"
+        return f"Menunggu verifikasi PIC seksi {submission.assigned_section or '-'}"
     if submission.status == "PENELITIAN_DOKUMEN":
-        return f"Sedang diteliti staff seksi {submission.assigned_section or submission.bagian}"
+        return f"Sedang diteliti staff seksi {submission.assigned_section or '-'}"
     if submission.status == "PENOLAKAN":
         return "Surat ditolak petugas, pengguna jasa harus unggah surat baru"
     if submission.status == "SELESAI":
@@ -269,8 +290,10 @@ def build_admin_dashboard_context(
         "can_verify_document": can_verify_document(current_user),
         "can_upload_response_document": can_upload_response_document(current_user),
         "can_complete_document": can_complete_document(current_user),
+        "can_edit_submission_metadata": can_edit_submission_metadata(current_user),
         "can_monitor_document": can_monitor_document(current_user),
         "submission_progress_label": get_submission_progress_label,
+        "urgency_badge_class": urgency_badge_class,
         "waiting_distribution_count": db.query(models.DocumentSubmission)
         .filter(models.DocumentSubmission.status == "PENOMORAN_AGENDA")
         .count(),
@@ -568,6 +591,7 @@ def document_detail(document_id: str, request: Request, db: Session = Depends(ge
             "current_user": current_user,
             "submission": submission,
             "status_labels": STATUS_LABELS,
+            "urgency_badge_class": urgency_badge_class,
         },
     )
 
@@ -704,24 +728,60 @@ def admin_document_detail(document_id: str, request: Request, db: Session = Depe
     return templates.TemplateResponse(
         request,
         "admin_document_detail.html",
-        {
-            "request": request,
-            "app_name": "Sistem Pengajuan Dokumen",
-            "current_user": current_user,
-            "submission": submission,
-            "status_labels": STATUS_LABELS,
-            "upload_error": None,
-            "staff_function": get_staff_function(current_user),
-            "submission_progress": get_submission_progress_label(submission),
-            "can_route_document": can_route_document(current_user),
-            "can_verify_document": can_verify_document(current_user),
-            "can_upload_response_document": can_upload_response_document(current_user),
-            "can_complete_document": can_complete_document(current_user),
-            "can_download_original": True,
-            "can_download_result": bool(submission.result_stored_filename),
-            "internal_section_options": INTERNAL_SECTION_OPTIONS,
-        },
+        build_admin_document_detail_context(request, current_user, submission),
     )
+
+
+@app.post("/admin/documents/{document_id}/metadata")
+def update_document_metadata(
+    document_id: str,
+    request: Request,
+    letter_number: str = Form(...),
+    subject: str = Form(...),
+    document_date: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    current_user = get_admin_user(request, db)
+    if not current_user:
+        return RedirectResponse(url="/login/petugas", status_code=status.HTTP_303_SEE_OTHER)
+    if not can_edit_submission_metadata(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Petugas ini tidak memiliki hak untuk mengubah metadata surat.",
+        )
+
+    submission = get_internal_submission(db, document_id)
+    if not submission:
+        return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+    if not can_operate_on_section(current_user, submission.assigned_section):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Petugas hanya dapat mengubah metadata surat pada seksinya.",
+        )
+
+    cleaned_letter_number = letter_number.strip()
+    cleaned_subject = subject.strip()
+
+    if not cleaned_letter_number or not cleaned_subject:
+        return RedirectResponse(
+            url=f"/admin/documents/{document_id}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    try:
+        parsed_date = datetime.strptime(document_date, "%Y-%m-%d").date()
+    except ValueError:
+        return RedirectResponse(
+            url=f"/admin/documents/{document_id}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    submission.letter_number = cleaned_letter_number
+    submission.subject = cleaned_subject
+    submission.document_date = parsed_date
+    db.commit()
+    log_audit_event(db, request, current_user.id, "verify", f"EDIT-DOC-{submission.document_id}")
+    return RedirectResponse(url=f"/admin/documents/{document_id}", status_code=status.HTTP_303_SEE_OTHER)
 
 
 def get_service_user_for_admin(db: Session, user_id: int) -> models.User | None:
@@ -961,6 +1021,34 @@ def get_internal_submission(db: Session, document_id: str) -> models.DocumentSub
     )
 
 
+def build_admin_document_detail_context(
+    request: Request,
+    current_user: models.User,
+    submission: models.DocumentSubmission,
+    *,
+    upload_error: str | None = None,
+):
+    return {
+        "request": request,
+        "app_name": "Sistem Pengajuan Dokumen",
+        "current_user": current_user,
+        "submission": submission,
+        "status_labels": STATUS_LABELS,
+        "upload_error": upload_error,
+        "staff_function": get_staff_function(current_user),
+        "submission_progress": get_submission_progress_label(submission),
+        "can_route_document": can_route_document(current_user),
+        "can_verify_document": can_verify_document(current_user),
+        "can_upload_response_document": can_upload_response_document(current_user),
+        "can_complete_document": can_complete_document(current_user),
+        "can_edit_submission_metadata": can_edit_submission_metadata(current_user),
+        "can_download_original": True,
+        "can_download_result": bool(submission.result_stored_filename),
+        "internal_section_options": INTERNAL_SECTION_OPTIONS,
+        "urgency_badge_class": urgency_badge_class,
+    }
+
+
 @app.post("/admin/documents/{document_id}/distribute")
 def distribute_document(
     document_id: str,
@@ -1021,7 +1109,7 @@ def verify_document_accept(document_id: str, request: Request, db: Session = Dep
 
     submission.status = "PENELITIAN_DOKUMEN"
     submission.assigned_staff_role = STAFF_ROLE_STAFF
-    submission.agenda_number = submission.agenda_number or generate_agenda_number(db, submission.assigned_section or submission.bagian)
+    submission.agenda_number = submission.agenda_number or generate_agenda_number(db, submission.assigned_section or "Perijinan Cukai")
     submission.admin_notes = None
     db.commit()
     log_audit_event(db, request, current_user.id, "verify", submission.document_id)
@@ -1088,23 +1176,12 @@ async def upload_result_document(
         return templates.TemplateResponse(
             request,
             "admin_document_detail.html",
-            {
-                "request": request,
-                "app_name": "Sistem Pengajuan Dokumen",
-                "current_user": current_user,
-                "submission": submission,
-                "status_labels": STATUS_LABELS,
-                "upload_error": validation_error,
-                "staff_function": get_staff_function(current_user),
-                "submission_progress": get_submission_progress_label(submission),
-                "can_route_document": can_route_document(current_user),
-                "can_verify_document": can_verify_document(current_user),
-                "can_upload_response_document": can_upload_response_document(current_user),
-                "can_complete_document": can_complete_document(current_user),
-                "can_download_original": True,
-                "can_download_result": bool(submission.result_stored_filename),
-                "internal_section_options": INTERNAL_SECTION_OPTIONS,
-            },
+            build_admin_document_detail_context(
+                request,
+                current_user,
+                submission,
+                upload_error=validation_error,
+            ),
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -1148,10 +1225,11 @@ def complete_document(document_id: str, request: Request, db: Session = Depends(
 @app.post("/documents/upload", response_class=HTMLResponse)
 async def upload_document(
     request: Request,
-    bagian: str = Form(...),
+    letter_number: str = Form(...),
     subject: str = Form(...),
     document_date: str = Form(...),
-    description: str = Form(...),
+    urgency_level: str = Form(...),
+    urgency_reason: str = Form(""),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
@@ -1161,25 +1239,31 @@ async def upload_document(
     if not is_service_user(current_user):
         return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
 
-    bagian = bagian.strip()
+    letter_number = letter_number.strip()
     subject = subject.strip()
-    description = description.strip()
+    urgency_reason = urgency_reason.strip()
+    normalized_urgency = normalize_urgency_level(urgency_level)
     form_data = {
-        "bagian": bagian or DEFAULT_BAGIAN,
+        "letter_number": letter_number,
         "subject": subject,
         "document_date": document_date,
-        "description": description,
+        "urgency_level": normalized_urgency,
+        "urgency_reason": urgency_reason,
     }
 
-    if bagian not in VALID_BAGIAN_OPTIONS:
-        context = build_home_context(request, db, error="Silakan pilih bagian yang valid.", form_data=form_data)
-        return templates.TemplateResponse(request, "index.html", context, status_code=status.HTTP_400_BAD_REQUEST)
-
-    if not subject or not description:
+    if not letter_number or not subject:
         context = build_home_context(
             request,
             db,
-            error="Perihal dan deskripsi wajib diisi.",
+            error="Nomor surat dan perihal wajib diisi.",
+            form_data=form_data,
+        )
+        return templates.TemplateResponse(request, "index.html", context, status_code=status.HTTP_400_BAD_REQUEST)
+    if normalized_urgency == "SEGERA" and not urgency_reason:
+        context = build_home_context(
+            request,
+            db,
+            error="Alasan urgensi wajib diisi saat sifat surat adalah Segera.",
             form_data=form_data,
         )
         return templates.TemplateResponse(request, "index.html", context, status_code=status.HTTP_400_BAD_REQUEST)
@@ -1212,10 +1296,12 @@ async def upload_document(
     generate_submission_receipt(
         output_path=receipt_path,
         document_id=document_id,
-        username=current_user.username,
-        bagian=bagian,
+        username=current_user.email,
+        letter_number=letter_number,
         document_date=parsed_date.strftime("%Y-%m-%d"),
         subject=subject,
+        urgency_level=normalized_urgency,
+        urgency_reason=urgency_reason or None,
         status="PENOMORAN_AGENDA",
         timestamp=submission_timestamp,
     )
@@ -1223,16 +1309,17 @@ async def upload_document(
     submission = models.DocumentSubmission(
         user_id=current_user.id,
         document_id=document_id,
-        bagian=bagian,
+        letter_number=letter_number,
         subject=subject,
         document_date=parsed_date,
-        description=description,
+        urgency_level=normalized_urgency,
+        urgency_reason=urgency_reason or None,
         original_filename=file.filename or "dokumen.pdf",
         stored_filename=stored_filename,
         receipt_original_filename=f"receipt-{document_id}.pdf",
         receipt_stored_filename=receipt_stored_filename,
         status="PENOMORAN_AGENDA",
-        assigned_section=bagian,
+        assigned_section=None,
         assigned_staff_role=STAFF_ROLE_OA,
     )
     db.add(submission)

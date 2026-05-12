@@ -73,9 +73,17 @@ def sync_schema() -> None:
 
         if "document_submissions" in tables:
             submission_columns = _column_names(connection, "document_submissions")
-            if "bagian" not in submission_columns:
+            if "letter_number" not in submission_columns:
                 connection.execute(
-                    "ALTER TABLE document_submissions ADD COLUMN bagian VARCHAR(100) DEFAULT 'Perijinan Cukai'"
+                    "ALTER TABLE document_submissions ADD COLUMN letter_number VARCHAR(150) DEFAULT ''"
+                )
+            if "urgency_level" not in submission_columns:
+                connection.execute(
+                    "ALTER TABLE document_submissions ADD COLUMN urgency_level VARCHAR(20) DEFAULT 'BIASA'"
+                )
+            if "urgency_reason" not in submission_columns:
+                connection.execute(
+                    "ALTER TABLE document_submissions ADD COLUMN urgency_reason TEXT"
                 )
             if "agenda_number" not in submission_columns:
                 connection.execute(
@@ -89,13 +97,18 @@ def sync_schema() -> None:
                 connection.execute(
                     "ALTER TABLE document_submissions ADD COLUMN assigned_staff_role VARCHAR(50)"
                 )
-            connection.execute(
-                "UPDATE document_submissions SET bagian = 'Perijinan Cukai' WHERE bagian IS NULL OR TRIM(bagian) = ''"
-            )
             current_submission_columns = _column_names(connection, "document_submissions")
+            if "letter_number" in current_submission_columns:
+                connection.execute(
+                    "UPDATE document_submissions SET letter_number = '' WHERE letter_number IS NULL"
+                )
+            if "urgency_level" in current_submission_columns:
+                connection.execute(
+                    "UPDATE document_submissions SET urgency_level = 'BIASA' WHERE urgency_level IS NULL OR TRIM(urgency_level) = ''"
+                )
             if "assigned_section" in current_submission_columns:
                 connection.execute(
-                    "UPDATE document_submissions SET assigned_section = bagian WHERE assigned_section IS NULL OR TRIM(assigned_section) = ''"
+                    "UPDATE document_submissions SET assigned_section = 'Perijinan Cukai' WHERE assigned_section IS NULL OR TRIM(assigned_section) = ''"
                 )
             if "assigned_staff_role" in current_submission_columns:
                 connection.execute(

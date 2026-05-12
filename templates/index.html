@@ -18,7 +18,7 @@
             <div>
                 <p class="text-sm font-medium text-sky-700">Pengajuan Baru</p>
                 <h1 class="mt-2 text-2xl font-semibold text-slate-900">Unggah dokumen</h1>
-                <p class="mt-2 text-sm leading-6 text-slate-500">Isi perihal, tanggal dokumen, dan unggah file PDF hingga 5 MB.</p>
+                <p class="mt-2 text-sm leading-6 text-slate-500">Isi nomor surat, perihal, sifat surat, tanggal dokumen, lalu unggah file PDF hingga 5 MB.</p>
             </div>
             <div class="grid gap-2 text-sm text-slate-500">
                 <span class="rounded-2xl bg-slate-100 px-4 py-3">Format yang diterima: PDF</span>
@@ -34,12 +34,8 @@
 
         <form class="mt-6 grid gap-5 lg:grid-cols-2" method="post" action="/documents/upload" enctype="multipart/form-data">
             <div class="space-y-2">
-                <label for="bagian" class="text-sm font-semibold text-slate-700">Bagian</label>
-                <select id="bagian" name="bagian" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100">
-                    {% for bagian_option in bagian_options %}
-                    <option value="{{ bagian_option }}" {% if form_data.bagian == bagian_option %}selected{% endif %}>{{ bagian_option }}</option>
-                    {% endfor %}
-                </select>
+                <label for="letter_number" class="text-sm font-semibold text-slate-700">Nomor Surat</label>
+                <input id="letter_number" name="letter_number" type="text" value="{{ form_data.letter_number }}" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100">
             </div>
 
             <div class="space-y-2">
@@ -48,13 +44,22 @@
             </div>
 
             <div class="space-y-2">
-                <label for="document_date" class="text-sm font-semibold text-slate-700">Tanggal</label>
+                <label for="document_date" class="text-sm font-semibold text-slate-700">Tanggal Surat</label>
                 <input id="document_date" name="document_date" type="date" value="{{ form_data.document_date }}" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100">
             </div>
 
-            <div class="space-y-2 lg:col-span-2">
-                <label for="description" class="text-sm font-semibold text-slate-700">Deskripsi</label>
-                <textarea id="description" name="description" rows="5" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100">{{ form_data.description }}</textarea>
+            <div class="space-y-2">
+                <label for="urgency_level" class="text-sm font-semibold text-slate-700">Sifat</label>
+                <select id="urgency_level" name="urgency_level" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100">
+                    {% for urgency_option in urgency_options %}
+                    <option value="{{ urgency_option }}" {% if form_data.urgency_level == urgency_option %}selected{% endif %}>{{ urgency_option.title() }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="urgency_reason_group" class="space-y-2 {% if form_data.urgency_level != 'SEGERA' %}hidden{% endif %}">
+                <label for="urgency_reason" class="text-sm font-semibold text-slate-700">Alasan Urgensi</label>
+                <textarea id="urgency_reason" name="urgency_reason" rows="4" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-100">{{ form_data.urgency_reason }}</textarea>
             </div>
 
             <div class="space-y-2 lg:col-span-2">
@@ -68,6 +73,24 @@
                 </button>
             </div>
         </form>
+
+        <script>
+            const urgencyField = document.getElementById("urgency_level");
+            const urgencyReasonGroup = document.getElementById("urgency_reason_group");
+            const urgencyReasonField = document.getElementById("urgency_reason");
+
+            function syncUrgencyReason() {
+                const isUrgent = urgencyField.value === "SEGERA";
+                urgencyReasonGroup.classList.toggle("hidden", !isUrgent);
+                urgencyReasonField.required = isUrgent;
+                if (!isUrgent) {
+                    urgencyReasonField.value = "";
+                }
+            }
+
+            urgencyField.addEventListener("change", syncUrgencyReason);
+            syncUrgencyReason();
+        </script>
     </section>
     {% else %}
     <section class="rounded-[28px] bg-white p-8 shadow-panel ring-1 ring-slate-200">

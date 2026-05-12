@@ -13,9 +13,11 @@ def generate_submission_receipt(
     output_path: Path,
     document_id: str,
     username: str,
-    bagian: str,
+    letter_number: str,
     document_date: str,
     subject: str,
+    urgency_level: str,
+    urgency_reason: str | None,
     status: str,
     timestamp: str,
 ) -> None:
@@ -37,17 +39,32 @@ def generate_submission_receipt(
     pdf.drawString(left, top - 8 * mm, f"Dibuat: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
     rows = [
-        ("Document ID", document_id),
-        ("User Name", username),
-        ("Bagian", bagian),
-        ("Date", document_date),
-        ("Subject", subject),
+        ("ID Dokumen", document_id),
+        ("Pengguna", username),
+        ("Nomor Surat", letter_number or "-"),
+        ("Tanggal Surat", document_date),
+        ("Perihal", subject),
+        ("Sifat", urgency_level),
         ("Status", status),
-        ("Timestamp", timestamp),
+        ("Waktu Pengajuan", timestamp),
     ]
+    if urgency_level == "SEGERA" and urgency_reason:
+        rows.append(("Alasan Urgensi", urgency_reason))
 
     signature_secret = os.getenv("RECEIPT_SIGNATURE_SECRET", "submitdoc-receipt-signature")
-    signature_payload = "|".join([document_id, username, bagian, document_date, subject, status, timestamp])
+    signature_payload = "|".join(
+        [
+            document_id,
+            username,
+            letter_number or "-",
+            document_date,
+            subject,
+            urgency_level,
+            urgency_reason or "-",
+            status,
+            timestamp,
+        ]
+    )
     signature_value = hmac.new(
         signature_secret.encode("utf-8"),
         signature_payload.encode("utf-8"),

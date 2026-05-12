@@ -68,15 +68,18 @@
                     <tr class="align-top transition hover:bg-slate-50">
                         <td class="px-6 py-4">
                             <div class="font-semibold text-slate-900">{{ submission.subject }}</div>
+                            <div class="mt-1 text-xs font-medium text-slate-600">Nomor Surat: {{ submission.letter_number }}</div>
                             <div class="mt-1 text-xs text-slate-500">{{ submission.document_id }}</div>
-                            <div class="mt-2 text-xs font-medium text-emerald-700">{{ submission.bagian }}</div>
+                            <div class="mt-2">
+                                <span class="{{ urgency_badge_class(submission.urgency_level) }}">{{ submission.urgency_level }}</span>
+                            </div>
                         </td>
                         <td class="px-6 py-4">
                             <div class="text-sm font-medium text-slate-900">{{ submission.user.company_name or submission.user.pic_name or submission.user.email }}</div>
                             <div class="mt-1 text-xs text-slate-500">{{ submission.user.email }}</div>
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-600">
-                            <div>{{ submission.assigned_section or submission.bagian }}</div>
+                            <div>{{ submission.assigned_section or '-' }}</div>
                             <div class="mt-1 text-xs text-slate-500">{{ submission.assigned_staff_role or 'OA' }}</div>
                         </td>
                         <td class="px-6 py-4 text-sm text-slate-600">{{ submission.agenda_number or '-' }}</td>
