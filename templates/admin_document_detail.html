@@ -56,8 +56,20 @@
             </div>
 
             <div class="rounded-[28px] bg-white p-6 shadow-panel ring-1 ring-slate-200 sm:p-8">
-                <h2 class="text-lg font-semibold text-slate-900">Isi Surat</h2>
-                <dl class="mt-5 grid gap-4 sm:grid-cols-2">
+                <div class="flex items-center justify-between gap-4">
+                    <h2 class="text-lg font-semibold text-slate-900">Isi Surat</h2>
+                    {% if can_edit_submission_metadata %}
+                    <button
+                        type="button"
+                        id="toggle-metadata-edit"
+                        class="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                        <span aria-hidden="true">✎</span>
+                        <span>Edit</span>
+                    </button>
+                    {% endif %}
+                </div>
+                <dl id="metadata-display" class="mt-5 grid gap-4 sm:grid-cols-2">
                     <div class="rounded-2xl bg-slate-50 p-4">
                         <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Nomor Surat</dt>
                         <dd class="mt-2 text-sm font-medium text-slate-900">{{ submission.letter_number }}</dd>
@@ -78,18 +90,18 @@
                     </div>
                 </dl>
                 {% if submission.urgency_level == 'SEGERA' %}
-                <div class="mt-5 rounded-2xl bg-rose-50 p-4">
+                <div id="urgency-display" class="mt-5 rounded-2xl bg-rose-50 p-4">
                     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-rose-500">Alasan Urgensi</p>
                     <p class="mt-2 whitespace-pre-line text-sm leading-7 text-rose-900">{{ submission.urgency_reason }}</p>
                 </div>
                 {% endif %}
-            </div>
-
-            {% if can_edit_submission_metadata %}
-            <div class="rounded-[28px] bg-white p-6 shadow-panel ring-1 ring-slate-200 sm:p-8">
-                <h2 class="text-lg font-semibold text-slate-900">Edit Metadata Surat</h2>
-                <p class="mt-2 text-sm text-slate-500">Role aktif pada tahap surat ini dapat memperbarui nomor surat, tanggal surat, dan perihal sesuai dokumen terbaru yang sedang diproses.</p>
-                <form class="mt-5 grid gap-4 sm:grid-cols-2" method="post" action="/admin/documents/{{ submission.document_id }}/metadata">
+                {% if can_edit_submission_metadata %}
+                <form
+                    id="metadata-edit-form"
+                    class="mt-5 hidden grid gap-4 sm:grid-cols-2"
+                    method="post"
+                    action="/admin/documents/{{ submission.document_id }}/metadata"
+                >
                     <div class="space-y-2">
                         <label for="letter_number" class="text-sm font-semibold text-slate-700">Nomor Surat</label>
                         <input id="letter_number" name="letter_number" type="text" value="{{ submission.letter_number }}" required class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
@@ -107,9 +119,18 @@
                             Simpan Metadata Surat
                         </button>
                     </div>
+                    <div class="sm:col-span-2">
+                        <button
+                            type="button"
+                            id="cancel-metadata-edit"
+                            class="inline-flex w-full items-center justify-center rounded-2xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                        >
+                            Batal
+                        </button>
+                    </div>
                 </form>
+                {% endif %}
             </div>
-            {% endif %}
 
             {% if submission.admin_notes %}
             <div class="rounded-[28px] border border-amber-200 bg-amber-50 p-6 shadow-panel">
@@ -250,4 +271,30 @@
         </div>
     </section>
 </div>
+{% if can_edit_submission_metadata %}
+<script>
+    const toggleMetadataEditButton = document.getElementById("toggle-metadata-edit");
+    const cancelMetadataEditButton = document.getElementById("cancel-metadata-edit");
+    const metadataDisplay = document.getElementById("metadata-display");
+    const urgencyDisplay = document.getElementById("urgency-display");
+    const metadataEditForm = document.getElementById("metadata-edit-form");
+
+    function setMetadataEditMode(isEditing) {
+        metadataDisplay.classList.toggle("hidden", isEditing);
+        if (urgencyDisplay) {
+            urgencyDisplay.classList.toggle("hidden", isEditing);
+        }
+        metadataEditForm.classList.toggle("hidden", !isEditing);
+        toggleMetadataEditButton.classList.toggle("hidden", isEditing);
+    }
+
+    toggleMetadataEditButton.addEventListener("click", function () {
+        setMetadataEditMode(true);
+    });
+
+    cancelMetadataEditButton.addEventListener("click", function () {
+        setMetadataEditMode(false);
+    });
+</script>
+{% endif %}
 {% endblock %}
